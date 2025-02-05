@@ -1,0 +1,16 @@
+[Unit]
+Description=CD-Controller API Service
+After=network.target
+
+[Service]
+ExecStart=npm start
+WorkingDirectory=/home/cd/cdplayer/cd-ctl-node
+Restart=always
+User=cd
+Environment=NODE_ENV=production
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=cd-ctl
+
+[Install]
+WantedBy=multi-user.target
