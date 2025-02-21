@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 ExecStart=npm start
-WorkingDirectory=/home/cd/cdplayer/cd-ctl-node
+WorkingDirectory=/opt/cdplayer/cd-ctl-node
 Restart=always
 User=cd
 Environment=NODE_ENV=production
