@@ -23,7 +23,7 @@ const info = async (req, res) => {
       }
 
       if (line.startsWith('track:')) {
-        const [, trackNum, offset] = line.match(/track:(lout|\d+)\s+lba:\s+(\d+)/);
+        const [, trackNum, offset] = line.match(/track:(lout|\d+)\s+lba:\s+(\d+)/) || [];
 
         if (trackNum === 'lout') {
           toc.push(parseInt(offset) + SECTOR_OFFSET);
