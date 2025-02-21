@@ -3,6 +3,9 @@ const crypto = require('crypto');
 const { execCommand } = require('./execCommand');
 
 const CD_DEVICE = '/dev/cdrom';
+const SECTOR_OFFSET = 150;
+const MB_URL = 'https://musicbrainz.org/ws/2/discid';
+const MB_HEADERS = { 'User-Agent': 'CDPlayer/1.0.0 ( dave@digitaldementia.com )' };
 
 // Retrieve TOC and Query MusicBrainz
 const info = async (req, res) => {
@@ -23,9 +26,9 @@ const info = async (req, res) => {
         const [, trackNum, offset] = line.match(/track:?\s+lba:\s+(\d+)\s+\(.*?\)\s+/) || [];
 
         if (trackNum === 'lout') {
-          toc.push(parseInt(offset));
+          toc.push(parseInt(offset + SECTOR_OFFSET));
         } else if (trackNum) {
-          offsets.push(parseInt(offset));
+          offsets.push(parseInt(offset + SECTOR_OFFSET));
         }
       }
     }
@@ -37,7 +40,7 @@ const info = async (req, res) => {
                    .replace(/\//g, '_')
                    .replace(/=/g, '');
 
-    const response = await axios.get(`https://musicbrainz.org/ws/2/discid/${discId}?fmt=json`);
+    const response = await axios.get(`${MB_URL}/${discId}?fmt=json`, MB_HEADERS);
     const metadata = response.data;
     const info = { discId, metadata };
     res.json({ success: true, error: null, info });
