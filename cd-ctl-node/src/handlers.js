@@ -3,49 +3,39 @@ const crypto = require('crypto');
 const { execCommand } = require('./execCommand');
 
 const CD_DEVICE = '/dev/cdrom';
-const TRACK_REGEX = /track:\s+\d+\s+lba:\s+(\d+)/g;
-const LEADOUT_REGEX = /track:lout lba:\s+(\d+)/
 
 // Retrieve TOC and Query MusicBrainz
 const info = async (req, res) => {
+  let toc = [];
+  let offsets = [];
   let discId = null;
 
   try {
     const output = await execCommand(`wodim dev=${CD_DEVICE} -toc`);
-    let firstTrack = null;
-    let lastTrack = null;
-    let frameOffsets = Array(100).fill(0);
 
-    let match;
-    while ((match = TRACK_REGEX.exec(output)) !== null) {
-      const trackNum = parseInt(match[1], 10);
-      const lba = parseInt(match[2], 10);
-
-      if (firstTrack === null) {
-        firstTrack = trackNum;
+    for (const line of output.split('\n')) {
+      if (line.startsWith('first:')) {
+        toc.push(...line.match(/first:\s+(\d+)\s+last\s+(\d+)/).slice(1).map(Number));
+        continue;
       }
-      lastTrack = trackNum;
-      frameOffsets[trackNum - 1] = lba;
-    }
-    match = LEADOUT_REGEX.exec(output);
-    if (match) {
-      frameOffsets[0] = parseInt(match[1], 10);
-    } else {
-      throw new Error("Lead-out track not found.");
-    }
 
-    let hashInput = '';
-    hashInput += firstTrack.toString(16).toUpperCase().padStart(2, '0');
-    hashInput += lastTrack.toString(16).toUpperCase().padStart(2, '0');
-    for (let i = 0; i < 100; i++) {
-      hashInput += frameOffsets[i].toString(16).toUpperCase().padStart(8, '0');
-    }
+      if (line.startsWith('track:')) {
+        const [, trackNum, offset] = line.match(/track:(?:lout)?\s+lba:\s+(\d+)\s+\(.*?\)\s+/) || [];
 
-    const sha = crypto.createHash('sha1').update(hashInput).digest();
-    discId = sha.toString('base64')
-                .replace(/\+/g, '.')
-                .replace(/\//g, '_')
-                .replace(/=+$/, '');
+        if (trackNum.includes('lout')) {
+          toc.push(parseInt(offset));
+        } else if (trackNum) {
+          offsets.push(parseInt(offset));
+        }
+      }
+    }
+    toc.push(...offsets);
+    discId = crypto.createHash('sha1')
+                   .update(toc.join(' '))
+                   .digest('base64')
+                   .replace(/\+/g, '.')
+                   .replace(/\//g, '_')
+                   .replace(/=/g, '');
 
     const response = await axios.get(`https://musicbrainz.org/ws/2/discid/${discId}?fmt=json`);
     const metadata = response.data;
