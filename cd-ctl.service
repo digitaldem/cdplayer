@@ -6,7 +6,8 @@ After=network.target
 ExecStart=npm start
 WorkingDirectory=/opt/cdplayer/cd-ctl-node
 Restart=always
-User=cd
+User=cduser
+Group=cduser
 Environment=NODE_ENV=production
 StandardOutput=syslog
 StandardError=syslog
