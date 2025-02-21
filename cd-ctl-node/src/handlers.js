@@ -5,7 +5,7 @@ const { execCommand } = require('./execCommand');
 const CD_DEVICE = '/dev/cdrom';
 const SECTOR_OFFSET = 150;
 const MB_URL = 'https://musicbrainz.org/ws/2/discid';
-const MB_HEADERS = { 'User-Agent': 'CDPlayer/1.0.0 ( dave@digitaldementia.com )' };
+const MB_HEADERS = { 'User-Agent': 'CDPlayer/1.0.0 (dave@digitaldementia.com)' };
 
 // Retrieve TOC and Query MusicBrainz
 const info = async (req, res) => {
@@ -45,7 +45,7 @@ const info = async (req, res) => {
     const info = { discId, metadata };
     res.json({ success: true, error: null, info });
   } catch (e) {
-    res.status(500).json({ success: false, error: `Disc ID: ${discId ?? 'null'}\n${e.message}` });
+    res.status(500).json({ success: false, error: `TOC: ${toc.join(' ')}\nDisc ID: ${discId ?? 'null'}\n${e.message}` });
   }
 };
 
