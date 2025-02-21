@@ -1,25 +1,32 @@
 const axios = require('axios');
+const crypto = require('crypto');
 const { execCommand } = require('./execCommand');
 
 const CD_DEVICE = '/dev/cdrom';
+const TRACK_REGEX = /track:\s+\d+\s+lba:\s+(\d+)/g;
+const LEADOUT_REGEX = /track:lout lba:\s+(\d+)/
 
 // Retrieve TOC and Query MusicBrainz
 const info = async (req, res) => {
-  let discId;
+  let discId = null;
 
   try {
-    const output = await execCommand(`cd-discid ${CD_DEVICE}`);
-    const toc = output.split(' ');
-    if (toc.length < 3) {
-      throw new Error('Invalid CD information retrieved');
+    const output = await execCommand(`wodim dev=${CD_DEVICE} -toc`);
+    let trackCount = 0;
+    let toc = '';
+    let match;
+    while ((match = TRACK_REGEX.exec(output)) !== null) {
+        trackCount++;
+        toc += match[1].padStart(8, '0');
     }
-    discId = toc.shift();
+    if ((match = LEADOUT_REGEX.exec(output))) {
+        toc += match[1].padStart(8, '0');
+    }
+    discId = crypto.createHash('md5').update(`${trackCount}${toc}`).digest('hex');
+    
     const response = await axios.get(`https://musicbrainz.org/ws/2/discid/${discId}?fmt=json`);
-    const trackCount = parseInt(toc.shift(), 10);
-    const leadout = parseInt(toc.shift(), 10);
-    const trackOffsets = toc.map(Number);
     const metadata = response.data;
-    const info = { discId, trackCount, leadout, trackOffsets, metadata };
+    const info = { discId, trackCount, metadata };
     res.json({ success: true, error: null, info });
   } catch (e) {
     res.status(500).json({ success: false, error: `Disc ID: ${discId ?? 'null'}\n${e.message}` });
