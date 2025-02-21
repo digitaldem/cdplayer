@@ -1,10 +1,12 @@
 const axios = require('axios');
+const baseX = require('base-x');
 const crypto = require('crypto');
 const { execCommand } = require('./execCommand');
 
 const CD_DEVICE = '/dev/cdrom';
 const TRACK_REGEX = /track:\s+\d+\s+lba:\s+(\d+)/g;
 const LEADOUT_REGEX = /track:lout lba:\s+(\d+)/
+const ALPHABET = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
 // Retrieve TOC and Query MusicBrainz
 const info = async (req, res) => {
@@ -22,8 +24,9 @@ const info = async (req, res) => {
     if ((match = LEADOUT_REGEX.exec(output))) {
         toc += match[1].padStart(8, '0');
     }
-    discId = crypto.createHash('md5').update(`${trackCount}${toc}`).digest('hex');
-    
+    const md5 = crypto.createHash('md5').update(`${trackCount}${toc}`).digest('hex');
+    discId = baseX(ALPHABET).encode(Buffer.from(md5, 'hex'));
+
     const response = await axios.get(`https://musicbrainz.org/ws/2/discid/${discId}?fmt=json`);
     const metadata = response.data;
     const info = { discId, trackCount, metadata };
