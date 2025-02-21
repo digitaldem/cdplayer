@@ -28,7 +28,10 @@ const info = async (req, res) => {
         if (trackNum === 'lout') {
           toc.push(parseInt(offset) + SECTOR_OFFSET);
         } else {
-          offsets.push(parseInt(offset) + SECTOR_OFFSET);
+          offsets.push(line);
+          offsets.push(trackNum);
+          offsets.push(offset);
+          //offsets.push(parseInt(offset) + SECTOR_OFFSET);
         }
       }
     }
