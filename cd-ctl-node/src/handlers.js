@@ -23,13 +23,12 @@ const info = async (req, res) => {
       }
 
       if (line.startsWith('track:')) {
-        const [, trackNum, offset] = line.match(/track:(lout|\d+)\s+lba:\s+(\d+)\s+\(.*?\)\s+/) || [];
+        const [, trackNum, offset] = line.match(/track:(lout|\d+)\s+lba:\s+(\d+)/);
 
         if (trackNum === 'lout') {
           toc.push(parseInt(offset) + SECTOR_OFFSET);
         } else {
-          offsets.push(offset);
-          //offsets.push(parseInt(offset) + SECTOR_OFFSET);
+          offsets.push(parseInt(offset) + SECTOR_OFFSET);
         }
       }
     }
