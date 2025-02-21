@@ -1,12 +1,10 @@
 const axios = require('axios');
-const baseX = require('base-x');
 const crypto = require('crypto');
 const { execCommand } = require('./execCommand');
 
 const CD_DEVICE = '/dev/cdrom';
 const TRACK_REGEX = /track:\s+\d+\s+lba:\s+(\d+)/g;
 const LEADOUT_REGEX = /track:lout lba:\s+(\d+)/
-const base28 = baseX('0123456789ABCDEFGHJKLMNPQRSTUVWXYZ');
 
 // Retrieve TOC and Query MusicBrainz
 const info = async (req, res) => {
@@ -14,22 +12,44 @@ const info = async (req, res) => {
 
   try {
     const output = await execCommand(`wodim dev=${CD_DEVICE} -toc`);
-    let trackCount = 0;
-    let toc = '';
+    let firstTrack = null;
+    let lastTrack = null;
+    let frameOffsets = Array(100).fill(0);
+
     let match;
     while ((match = TRACK_REGEX.exec(output)) !== null) {
-        trackCount++;
-        toc += match[1].padStart(8, '0');
+      const trackNum = parseInt(match[1], 10);
+      const lba = parseInt(match[2], 10);
+
+      if (firstTrack === null) {
+        firstTrack = trackNum;
+      }
+      lastTrack = trackNum;
+      frameOffsets[trackNum - 1] = lba;
     }
-    if ((match = LEADOUT_REGEX.exec(output))) {
-        toc += match[1].padStart(8, '0');
+    match = LEADOUT_REGEX.exec(output);
+    if (match) {
+      frameOffsets[0] = parseInt(match[1], 10);
+    } else {
+      throw new Error("Lead-out track not found.");
     }
-    const md5 = crypto.createHash('md5').update(`${trackCount}${toc}`).digest('hex');
-    discId = base28.encode(Buffer.from(md5, 'hex'));
+
+    let hashInput = '';
+    hashInput += firstTrack.toString(16).toUpperCase().padStart(2, '0');
+    hashInput += lastTrack.toString(16).toUpperCase().padStart(2, '0');
+    for (let i = 0; i < 100; i++) {
+      hashInput += frameOffsets[i].toString(16).toUpperCase().padStart(8, '0');
+    }
+
+    const sha = crypto.createHash('sha1').update(hashInput).digest();
+    discId = sha.toString('base64')
+                .replace(/\+/g, '.')
+                .replace(/\//g, '_')
+                .replace(/=+$/, '');
 
     const response = await axios.get(`https://musicbrainz.org/ws/2/discid/${discId}?fmt=json`);
     const metadata = response.data;
-    const info = { discId, trackCount, metadata };
+    const info = { discId, metadata };
     res.json({ success: true, error: null, info });
   } catch (e) {
     res.status(500).json({ success: false, error: `Disc ID: ${discId ?? 'null'}\n${e.message}` });
