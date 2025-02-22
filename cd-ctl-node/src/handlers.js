@@ -9,7 +9,7 @@ const MB_HEADERS = { 'User-Agent': 'CDPlayer/1.0.0 (dave@digitaldementia.com)' }
 
 // Retrieve TOC and Query MusicBrainz
 const info = async (req, res) => {
-  let toc = new Array(100).fill('0'.repeat(8));
+  let toc = new Array(102).fill('0'.repeat(8));
   let discId = null;
 
   try {
