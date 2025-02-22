@@ -60,7 +60,7 @@ const info = async (req, res) => {
       }
     }
 
-    const info = { discId, metadata };
+    const info = { discId, ...metadata };
     res.json({ success: true, error: null, info });
   } catch (e) {
     res.status(500).json({ success: false, error: `TOC: ${toc.join(' ')}\nDisc ID: ${discId ?? 'null'}\n${e.message}` });
