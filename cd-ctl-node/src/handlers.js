@@ -11,6 +11,13 @@ const MB_HEADERS = { 'User-Agent': 'CDPlayer/1.0.0 (dave@digitaldementia.com)' }
 const info = async (req, res) => {
   let toc = new Array(102).fill('0'.repeat(8));
   let discId = null;
+  const metadata = {
+    artist: null,
+    year: null,
+    album: null,
+    albumArt: null,
+    tracks: []
+  };
 
   try {
     const output = await execCommand(`wodim dev=${CD_DEVICE} -toc`);
@@ -38,8 +45,21 @@ const info = async (req, res) => {
                    .replace(/\//g, '_')
                    .replace(/=/g, '-');
 
-    const response = await axios.get(`${MB_URL}/${discId}?fmt=json`, MB_HEADERS);
-    const metadata = response.data;
+    const response = await axios.get(`${MB_URL}/${discId}?fmt=json&inc=artist-credits+recordings`, MB_HEADERS);
+    const mbdata = response.data;
+    if (mbdata.releases && mbdata.releases.length > 0) {
+      const release = mbdata.releases[0];
+      metadata.artist = release['artist-credit'] ? release['artist-credit'].map(ac => ac.name).join(', ') : null;
+      metadata.year = release['date'] ? release['date'].split(/[-/]/)[0] : null;
+      metadata.album = release['title'] ? release['title'] : null;
+      metadata.albumArt = (release['cover-art-archive']?.front) ? `https://coverartarchive.org/release/${release.id}/front` : null;
+      if (release.media && release.media.length > 0) {
+        const media = release.media[0];
+        media['tracks']?.sort((a, b) => a.position - b.position);
+        metadata.tracks = media.tracks.map(track => track.title);
+      }
+    }
+
     const info = { discId, metadata };
     res.json({ success: true, error: null, info });
   } catch (e) {
