@@ -18,17 +18,17 @@ const info = async (req, res) => {
 
     for (const line of output.split('\n')) {
       if (line.startsWith('first:')) {
-        toc.push(...line.match(/first:\s+(\d+)\s+last\s+(\d+)/).slice(1).map(Number));
+        toc.push(...line.match(/first:\s+(\d+)\s+last\s+(\d+)/).slice(1).map(x => parseInt(x).toString(16).padStart(2, '0').toUpperCase()));
         continue;
       }
 
       if (line.startsWith('track:')) {
         const [, trackNum, offset] = line.match(/track:\s*(\d+|lout)\s+lba:\s+(\d+)/) || [];
-
+        const offsetHex = (parseInt(offset) + SECTOR_OFFSET).toString(16).padStart(8, '0').toUpperCase();
         if (trackNum === 'lout') {
-          toc.push(parseInt(offset) + SECTOR_OFFSET);
+          toc.push(offsetHex);
         } else {
-          offsets.push(parseInt(offset) + SECTOR_OFFSET);
+          offsets.push(offsetHex);
         }
       }
     }
