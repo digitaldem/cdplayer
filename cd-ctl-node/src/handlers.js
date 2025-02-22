@@ -34,8 +34,8 @@ const info = async (req, res) => {
     discId = crypto.createHash('sha1')
                    .update(toc.join(''))
                    .digest('base64')
-                   .replace(/\+/g, '_')
-                   .replace(/\//g, '.')
+                   .replace(/\+/g, '.')
+                   .replace(/\//g, '_')
                    .replace(/=/g, '-');
 
     const response = await axios.get(`${MB_URL}/${discId}?fmt=json`, MB_HEADERS);
