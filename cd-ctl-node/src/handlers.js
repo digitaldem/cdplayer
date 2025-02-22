@@ -9,8 +9,7 @@ const MB_HEADERS = { 'User-Agent': 'CDPlayer/1.0.0 (dave@digitaldementia.com)' }
 
 // Retrieve TOC and Query MusicBrainz
 const info = async (req, res) => {
-  let toc = [];
-  let offsets = [];
+  let toc = new Array(100).fill('0'.repeat(8));
   let discId = null;
 
   try {
@@ -18,7 +17,7 @@ const info = async (req, res) => {
 
     for (const line of output.split('\n')) {
       if (line.startsWith('first:')) {
-        toc.push(...line.match(/first:\s+(\d+)\s+last\s+(\d+)/).slice(1).map(x => parseInt(x).toString(16).padStart(2, '0').toUpperCase()));
+        toc.splice(0, 2, ...line.match(/first:\s+(\d+)\s+last\s+(\d+)/).slice(1).map(x => parseInt(x).toString(16).padStart(2, '0').toUpperCase()));
         continue;
       }
 
@@ -26,13 +25,12 @@ const info = async (req, res) => {
         const [, trackNum, offset] = line.match(/track:\s*(\d+|lout)\s+lba:\s+(\d+)/) || [];
         const offsetHex = (parseInt(offset) + SECTOR_OFFSET).toString(16).padStart(8, '0').toUpperCase();
         if (trackNum === 'lout') {
-          toc.push(offsetHex);
+          toc[2] = offsetHex;
         } else {
-          offsets.push(offsetHex);
+          toc[parseInt(trackNum) + 2] = offsetHex;
         }
       }
     }
-    toc.push(...offsets);
     discId = crypto.createHash('sha1')
                    .update(toc.join())
                    .digest('base64')
@@ -45,7 +43,7 @@ const info = async (req, res) => {
     const info = { discId, metadata };
     res.json({ success: true, error: null, info });
   } catch (e) {
-    res.status(500).json({ success: false, error: `TOC: ${toc.join(' ')}\nDisc ID: ${discId ?? 'null'}\n${e.message}` });
+    res.status(500).json({ success: false, error: `TOC: ${toc.join()}\nDisc ID: ${discId ?? 'null'}\n${e.message}` });
   }
 };
 
