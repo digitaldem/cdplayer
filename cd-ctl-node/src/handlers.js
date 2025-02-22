@@ -34,7 +34,7 @@ const info = async (req, res) => {
     }
     toc.push(...offsets);
     discId = crypto.createHash('sha1')
-                   .update(toc.join(' '))
+                   .update(toc.join())
                    .digest('base64')
                    .replace(/\+/g, '.')
                    .replace(/\//g, '_')
