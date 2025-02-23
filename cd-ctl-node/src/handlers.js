@@ -2,6 +2,16 @@ const DiscInfo = require('./discInfo');
 const { CD_DEVICE } = require('./constants');
 const { execCommand } = require('./execCommand');
 
+// Get the current playback status
+const status = async (req, res) => {
+  try {
+    // TODO: read from --slave file
+    res.json({ success: true, error: null });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+};
+
 // Retrieve the CD metadata info
 const info = async (req, res) => {
   try {
@@ -73,17 +83,8 @@ const eject = async (req, res) => {
   }
 };
 
-// Get the current playback status
-const status = async (req, res) => {
-  try {
-    // TODO: read from --slave file
-    res.json({ success: true, error: null });
-  } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
-  }
-};
-
 module.exports = {
+  status,
   info,
   play,
   pause,
@@ -91,5 +92,4 @@ module.exports = {
   next,
   previous,
   eject,
-  status,
 };
