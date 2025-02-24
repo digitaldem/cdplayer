@@ -18,15 +18,14 @@ class DiscInfo {
   }
 
   async get() {
-    // Lazy-load
-    if (this.metadata === null) {
-      this.metadata = await this._queryDiscInfo();
-    }
     return this.metadata;
+  }
+  
+  async set() {
+    this.metadata = await this._queryDiscInfo();
   }
 
   async clear() {
-    // Async only for API consistency
     this.metadata = null;
   }
 
