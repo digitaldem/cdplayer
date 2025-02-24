@@ -1,0 +1,19 @@
+# /etc/systemd/system
+
+[Unit]
+Description=CD-Controller API Service
+After=network.target
+
+[Service]
+ExecStart=npm start
+WorkingDirectory=/opt/cdplayer/cd-ctl-node
+Restart=always
+User=cduser
+Group=cduser
+Environment=NODE_ENV=production
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=cd-ctl
+
+[Install]
+WantedBy=multi-user.target
