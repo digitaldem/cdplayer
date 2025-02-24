@@ -5,7 +5,7 @@ const { execCommand } = require('./execCommand');
 // Insert the CD
 const insert = async (req, res) => {
   try {
-    await DiscInfo.set();
+    await DiscInfo.setMetadata();
     res.json({ success: true, error: null });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
@@ -76,7 +76,7 @@ const previous = async (req, res) => {
 // Retrieve the CD metadata info
 const info = async (req, res) => {
   try {
-    const info = await DiscInfo.get();
+    const info = await DiscInfo.getMetadata();
     res.json({ success: true, error: null, info });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
@@ -86,7 +86,7 @@ const info = async (req, res) => {
 // Get the current playback status
 const status = async (req, res) => {
   try {
-    // TODO: read from --slave file
+    const status = await DiscInfo.getState();
     res.json({ success: true, error: null });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
