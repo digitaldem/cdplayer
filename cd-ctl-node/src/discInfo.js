@@ -13,20 +13,30 @@ class DiscInfo {
     if (!DiscInfo.instance) {
       DiscInfo.instance = this;
       this.metadata = null;
+      this.state = null;
     }
     return DiscInfo.instance;
   }
 
-  async get() {
+  async getMetadata() {
     return this.metadata;
   }
   
-  async set() {
+  async getState() {
+    return this.state;
+  }
+  
+  async setMetadata() {
     this.metadata = await this._queryDiscInfo();
+  }
+  
+  async setState(newState) {
+    this.state = newState;
   }
 
   async clear() {
     this.metadata = null;
+    this.state = null;
   }
 
   async _queryDiscInfo() {
