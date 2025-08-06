@@ -12,8 +12,8 @@ User=cduser
 Group=cduser
 Environment=NODE_ENV=production
 Environment=PATH=/usr/bin:/usr/local/bin
-StandardOutput=syslog
-StandardError=syslog
+StandardOutput=journal
+StandardError=journal
 SyslogIdentifier=cd-ctl
 
 [Install]
