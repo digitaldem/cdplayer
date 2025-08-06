@@ -1,5 +1,5 @@
 const HOST = '0.0.0.0';
-const PORT = 80;
+const PORT = 8080;
 
 const CD_DEVICE = '/dev/cdrom';
 const SECTOR_OFFSET = 150;

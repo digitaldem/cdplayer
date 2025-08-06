@@ -6,7 +6,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/bin/npm start
-WorkingDirectory=/opt/cdplayer
+WorkingDirectory=/opt/cdplayer/cd-ctl-node
 Restart=always
 User=cduser
 Group=cduser
