@@ -1,16 +1,17 @@
-# /etc/systemd/system
+# /etc/systemd/system/cd-ctl.service
 
 [Unit]
 Description=CD-Controller API Service
 After=network.target
 
 [Service]
-ExecStart=npm start
-WorkingDirectory=/opt/cdplayer/cd-ctl-node
+ExecStart=/usr/bin/npm start
+WorkingDirectory=/opt/cdplayer
 Restart=always
 User=cduser
 Group=cduser
 Environment=NODE_ENV=production
+Environment=PATH=/usr/bin:/usr/local/bin
 StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier=cd-ctl
