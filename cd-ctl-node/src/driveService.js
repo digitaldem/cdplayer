@@ -18,7 +18,7 @@ class DriveService extends EventEmitter {
     }
 
     this._isMacOS = (process.platform === 'darwin');
-    this._devicePath = (this._isMacOS) ? null : CD_DEVICE;
+    this._devicePath = null;
     this._deviceLock = false;
     this._ejectCountdown = 0;
     this._mplayer = null;
@@ -27,7 +27,7 @@ class DriveService extends EventEmitter {
     DriveService.instance = this;
 
     (async () => {
-      await this._monitorDrive();
+      await this._startDevicePolling();
     })();
   }
 
@@ -38,10 +38,10 @@ class DriveService extends EventEmitter {
     return DriveService.instance;
   }
 
-  async _monitorDrive() {
+  async _startDevicePolling() {
+    let lastDevice = this._devicePath || null;
     if (this._isMacOS) {
-      let lastDevice = this._devicePath || null;
-      this._macPollInterval = setInterval(async () => {
+      this._devicePollInterval = setInterval(async () => {
         if (this._deviceLock) {
           return;
         }
@@ -89,22 +89,44 @@ class DriveService extends EventEmitter {
       return;
     }
 
-    const mon = spawn('udevadm', ['monitor', '--udev', '--subsystem-match=block']);
-    mon.stdout.on('data', async (data) => {
-      const txt = data.toString();
-      if (txt.includes('add') && txt.includes(path.basename(this._devicePath))) {
+    this._devicePollInterval = setInterval(async () => {
+      if (this._deviceLock) {
+        return;
+      }
+      this._deviceLock = true;
+
+      let hasDisc = false;
+      try {
+        const output = await this._execCommand('wodim', '-toc');
+        hasDisc = output.includes('Track');
+      } catch (err) {
+        console.error(`Error polling macOS CD device: ${err.message}`);
+        hasDisc = false;
+      }
+
+      if (hasDisc && !this._devicePath) {
+        this._ejectCountdown = 0;
+        this._devicePath = CD_DEVICE;
         const discId = await this._getDiscId();
         this._metadata = discId ? await metadataService.get(discId) : null;
         this.emit('insert', this._metadata);
-      } else if (txt.includes('remove') && txt.includes(path.basename(this._devicePath))) {
-        this._metadata = null;
-        this.emit('eject');
+      } else if (hasDisc && this._devicePath) {
+        this._ejectCountdown = 0;
+        this._devicePath = CD_DEVICE;
+      } else if (!hasDisc && this._devicePath) {
+        this._ejectCountdown++;
+        if (this._ejectCountdown >= 3) {
+          this._devicePath = null;
+          this._metadata = null;
+          this.emit('eject');
+        }
       }
-    });
+      this._deviceLock = false;
+    }, 2000);
   }
 
   async _spawnPlayer() {
-    if (this._pollInterval || !this._devicePath) {
+    if (this._playerPollInterval || !this._devicePath) {
       return;
     }
 
@@ -146,7 +168,7 @@ class DriveService extends EventEmitter {
   }
 
   async _startPlayerPolling() {
-    this._pollInterval = setInterval(() => {
+    this._playerPollInterval = setInterval(() => {
       if (this._mplayer) {
         this._mplayer.stdin.write('get_property disc-current-title\n');
         this._mplayer.stdin.write('get_time_pos\n');
@@ -156,9 +178,9 @@ class DriveService extends EventEmitter {
   }
 
   async _stopPlayerPolling() {
-    if (this._pollInterval) {
-      clearInterval(this._pollInterval);
-      this._pollInterval = null;
+    if (this._playerPollInterval) {
+      clearInterval(this._playerPollInterval);
+      this._playerPollInterval = null;
     }
   }
 
