@@ -45,18 +45,27 @@ class MetadataService {
       //console.error('Error reading metadata from cache:', err);
     }
 
-    let mbdata;
+    let mbdata = null;
     try {
       // Call MusicBrainz API for lookup by DiscId
       const response = await axios.get(`${MB_URL}/${discId}?fmt=json&inc=artist-credits+recordings`, { headers: MB_HEADERS });
       mbdata = response.data;
     } catch (err) {
-      // Log but continue
-      console.error('Error fetching metadata from API:', err);
-      mbdata = { releases: [] };
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 404) {
+          //console.warn(`Disc ID ${discId} not found in MusicBrainz.`);
+          mbdata = { releases: [] };
+        } else {
+          console.error('Error fetching metadata from API:', err);
+          mbdata = null;
+        }
+      } else {
+        console.error('Error fetching metadata from API:', err);
+        mbdata = null;
+      }
     }
 
-    try {
+    if (mbdata) {
       // Parse MB response
       if (mbdata['releases'] && mbdata['releases'].length > 0) {
         // Grab the first "release" (usually has the best accuracy)
@@ -88,9 +97,6 @@ class MetadataService {
         }
       }
       await this.set(discId, metadata);
-    } catch (err) {
-      // Log but continue
-      console.error('Error parsing metadata:', err);
     }
 
     return metadata;
