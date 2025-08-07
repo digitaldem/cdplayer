@@ -168,7 +168,7 @@ class DriveService extends EventEmitter {
       // console.info(`StdOut: ${stdout.trim()}`);
       return stdout.trim();
     } catch (err) {
-      // console.error(`StdErr: ${err.message}`);
+      console.error(`StdErr: ${err.message}`);
       throw err;
     }
   }
@@ -257,7 +257,7 @@ class DriveService extends EventEmitter {
       return '';
     }
 
-    // console.info(tocStringArray.join(' '));
+    console.info(tocStringArray.join(' '));
     // Join the TOC elements into a single string and calculate the SHA-1 hash
     return crypto.createHash('sha1')
                  .update(tocHexArray.join(''))
