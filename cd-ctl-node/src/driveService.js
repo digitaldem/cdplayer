@@ -168,7 +168,7 @@ class DriveService extends EventEmitter {
       // console.info(`StdOut: ${stdout.trim()}`);
       return stdout.trim();
     } catch (err) {
-      console.error(`StdErr: ${err.message}`);
+      // console.error(`StdErr: ${err.message}`);
       throw err;
     }
   }
