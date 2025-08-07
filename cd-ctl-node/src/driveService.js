@@ -100,7 +100,7 @@ class DriveService extends EventEmitter {
         const output = await this._execCommand('wodim', `dev=${CD_DEVICE}`, '-toc');
         hasDisc = output.includes('Track');
       } catch (err) {
-        console.error(`Error polling macOS CD device: ${err.message}`);
+        console.error(`Error polling CD device: ${err.message}`);
         hasDisc = false;
       }
 
@@ -194,7 +194,7 @@ class DriveService extends EventEmitter {
       }
       return stdout.trim();
     } catch (error) {
-      console.error(`Error: ${error.message}`);
+      //console.error(`Error: ${error.message}`);
     }
   }
 
