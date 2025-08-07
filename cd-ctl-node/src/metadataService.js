@@ -1,4 +1,5 @@
 const axios = require('axios');
+const https = require('https');
 const fs = require('fs').promises;
 const path = require('path');
 const { Low } = require('lowdb');
@@ -48,7 +49,11 @@ class MetadataService {
     let mbdata = null;
     try {
       // Call MusicBrainz API for lookup by DiscId
-      const response = await axios.get(`${MB_URL}/${discId}?fmt=json&inc=artist-credits+recordings`, { headers: MB_HEADERS });
+      const response = await axios.get(`${MB_URL}/${discId}?fmt=json&inc=artist-credits+recordings`, {
+        headers: MB_HEADERS,
+        timeout: 5000,
+        httpsAgent: new https.Agent({ family: 4 })
+      });
       mbdata = response.data;
     } catch (err) {
       if (axios.isAxiosError(err)) {
