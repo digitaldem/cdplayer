@@ -76,7 +76,6 @@ class DriveService extends EventEmitter {
 
       if (currentDevice && !this._devicePath) {
         // Newly inserted
-        console.log(`Inserted: ${toc}`);
         if (toc) {
           this._ejectCountdown = 0;
           this._devicePath = currentDevice;
@@ -89,7 +88,6 @@ class DriveService extends EventEmitter {
         this._ejectCountdown = 0;
       } else if (!currentDevice && this._devicePath) {
         // Newly removed
-        console.log('Ejected');
         this._ejectCountdown++;
         if (this._ejectCountdown >= 3) {
           this._devicePath = null;
@@ -169,8 +167,9 @@ class DriveService extends EventEmitter {
       }
       // console.info(`StdOut: ${stdout.trim()}`);
       return stdout.trim();
-    } catch (error) {
-      console.error(`StdErr: ${error.message}`);
+    } catch (err) {
+      // console.error(`StdErr: ${err.message}`);
+      throw err;
     }
   }
 
@@ -253,13 +252,12 @@ class DriveService extends EventEmitter {
           }
         }
       }
-    } catch (error) {
-      console.error(`Error getting disc ID: ${error.message}`);
+    } catch (err) {
+      console.error(`Error getting disc ID: ${err.message}`);
       return '';
     }
 
-    console.log(tocStringArray.join(' '));
-
+    // console.info(tocStringArray.join(' '));
     // Join the TOC elements into a single string and calculate the SHA-1 hash
     return crypto.createHash('sha1')
                  .update(tocHexArray.join(''))
@@ -280,10 +278,14 @@ class DriveService extends EventEmitter {
   async eject() {
     await this._killPlayer();
     this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };
-    if (this._isMacOS) {
-      return await this._execCommand('drutil', 'tray', 'eject');
+    try {
+      if (this._isMacOS) {
+        return await this._execCommand('drutil', 'tray', 'eject');
+      }
+      return await this._execCommand('eject', this._devicePath);
+    } catch (err) {
+      console.error(`Error ejecting disc: ${err.message}`);
     }
-    return await this._execCommand('eject', this._devicePath);
   }
 
   async play() {
