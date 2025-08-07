@@ -30,8 +30,8 @@ class MetadataService {
     return path.join(this.dir, `${key}.json`);
   }
 
-  async get(discId) {
-    const metadata = new Metadata(discId);
+  async get(discId, trackCount) {
+    const metadata = new Metadata(discId, trackCount);
 
     const filename = this._buildFileName(discId);
     try {
@@ -97,7 +97,7 @@ class MetadataService {
           if (media['tracks'] && media['tracks'].length > 0) {
             // Sort tracks by position and extract titles
             media['tracks'].sort((a, b) => a['position'] - b['position']);
-            metadata.setTracks(media['tracks'].map(track => track.title));
+            metadata.setTracks(media['tracks'].map(track => track['title']));
           }
         }
       }

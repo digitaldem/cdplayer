@@ -1,14 +1,14 @@
 class Metadata {
-  constructor(discId) {
+  constructor(discId, trackCount) {
     if (discId == undefined || discId == null) {
       throw new Error('Metadata requires a discId');
     }
     this.discId = discId;
+    this.tracks = Array.from({ length: trackCount }, (_, i) => null);
     this.artist = null;
     this.year = null;
     this.album = null;
     this.albumArt = null;
-    this.tracks = [];
   }
 
   setArtist(value) {

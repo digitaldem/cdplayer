@@ -79,8 +79,8 @@ class DriveService extends EventEmitter {
         if (toc) {
           this._ejectCountdown = 0;
           this._devicePath = currentDevice;
-          const discId = await this._getDiscId(toc);
-          this._metadata = discId ? await metadataService.get(discId) : null;
+          const [discId, trackCount] = await this._getDiscId(toc);
+          this._metadata = discId ? await metadataService.get(discId, trackCount) : null;
           this.emit('insert', this._metadata);
         }
       } else if (currentDevice && this._devicePath) {
@@ -259,12 +259,13 @@ class DriveService extends EventEmitter {
 
     console.info(tocStringArray.join(' '));
     // Join the TOC elements into a single string and calculate the SHA-1 hash
-    return crypto.createHash('sha1')
-                 .update(tocHexArray.join(''))
-                 .digest('base64')
-                 .replace(/\+/g, '.')
-                 .replace(/\//g, '_')
-                 .replace(/=/g, '-');
+    return [crypto.createHash('sha1')
+                  .update(tocHexArray.join(''))
+                  .digest('base64')
+                  .replace(/\+/g, '.')
+                  .replace(/\//g, '_')
+                  .replace(/=/g, '-'),
+            tocStringArray[1]];
   }
 
   async getStatus() {
