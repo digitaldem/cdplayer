@@ -52,42 +52,47 @@ class MetadataService {
       mbdata = response.data;
     } catch (err) {
       // Log but continue
-      //console.error('Error fetching metadata from API:', err);
+      console.error('Error fetching metadata from API:', err);
       mbdata = { releases: [] };
     }
 
-    // Parse MB response
-    if (mbdata['releases'] && mbdata['releases'].length > 0) {
-      // Grab the first "release" (usually has the best accuracy)
-      const release = mbdata['releases'][0];
+    try {
+      // Parse MB response
+      if (mbdata['releases'] && mbdata['releases'].length > 0) {
+        // Grab the first "release" (usually has the best accuracy)
+        const release = mbdata['releases'][0];
 
-      // Extract basic data
-      if (release['artist-credit'] && release['artist-credit'].length > 0) {
-        metadata.setArtist(release['artist-credit'].map(ac => ac.name).join(', ') || null);
-      }
-      if (release['date'] && release['date'].length > 0) {
-        metadata.setYear(release['date'].split(/[-/]/)[0] || null);
-      }
-      if (release['title'] && release['title'].length > 0) {
-        metadata.setAlbum(release['title'] || null);
-      }
-      if (release['cover-art-archive'] && release['cover-art-archive']['front']) {
-        metadata.setAlbumArt(`https://coverartarchive.org/release/${release.id}/front`);
-      }
-      if (release['media'] && release['media'].length > 0) {
-        //TODO: Handle multi disc sets
-        const media = release['media'][0];
+        // Extract basic data
+        if (release['artist-credit'] && release['artist-credit'].length > 0) {
+          metadata.setArtist(release['artist-credit'].map(ac => ac['name']).join(', ') || null);
+        }
+        if (release['date'] && release['date'].length > 0) {
+          metadata.setYear(release['date'].split(/[-/]/)[0] || null);
+        }
+        if (release['title'] && release['title'].length > 0) {
+          metadata.setAlbum(release['title'] || null);
+        }
+        if (release['cover-art-archive'] && release['cover-art-archive']['front']) {
+          metadata.setAlbumArt(`https://coverartarchive.org/release/${release['id']}/front`);
+        }
+        if (release['media'] && release['media'].length > 0) {
+          //TODO: Handle multi disc sets
+          const media = release['media'][0];
 
-        // Extract track data
-        if (media['tracks'] && media['tracks'].length > 0) {
-          // Sort tracks by position and extract titles
-          media['tracks'].sort((a, b) => a.position - b.position);
-          metadata.setTracks(media['tracks'].map(track => track.title));
+          // Extract track data
+          if (media['tracks'] && media['tracks'].length > 0) {
+            // Sort tracks by position and extract titles
+            media['tracks'].sort((a, b) => a['position'] - b['position']);
+            metadata.setTracks(media['tracks'].map(track => track.title));
+          }
         }
       }
+      await this.set(discId, metadata);
+    } catch (err) {
+      // Log but continue
+      console.error('Error parsing metadata:', err);
     }
 
-    await this.set(discId, metadata);
     return metadata;
   }
 
