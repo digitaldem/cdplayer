@@ -176,6 +176,7 @@ class DriveService extends EventEmitter {
 
   async _getDiscId(tocString) {
     // Allocate a filled hex string array of 102 '00000000's
+    const tocStringArray = new Array(102).fill('');
     const tocHexArray = new Array(102).fill('0'.repeat(8));
 
     try {
@@ -183,29 +184,34 @@ class DriveService extends EventEmitter {
       for (const tocLine of tocString.split('\n')) {
         const line = tocLine.trim()
         // Find the "First track" line (drutil)
-        if (line.startsWith('First track:')) {
+        if (line.startsWith('First track')) {
           // Extract the number and update the first TOC element
           // Note the string length on these elements is only 2 bytes,
           // while the remaining sector market elements use 8 bytes
-          tocHexArray[0] = parseInt(line.match(/First track:\s+(\d+)/)[1], 10).toString(16).padStart(2, '0').toUpperCase();
+          const value = line.match(/First track:\s+(\d+)/)[1];
+          tocStringArray[0] = value.trim();
+          tocHexArray[0] = parseInt(value, 10).toString(16).padStart(2, '0').toUpperCase();
           continue;
         }
         // Find the "Last track" line (drutil)
-        else if (line.startsWith('Last track:')) {
+        else if (line.startsWith('Last track')) {
           // Extract the number and update the second TOC element
           // Note the string length on these elements is only 2 bytes,
           // while the remaining sector market elements use 8 bytes
-          tocHexArray[1] = parseInt(line.match(/Last track:\s+(\d+)/)[1], 10).toString(16).padStart(2, '0').toUpperCase();
+          const value = line.match(/Last track:\s+(\d+)/)[1];
+          tocStringArray[1] = value.trim();
+          tocHexArray[1] = parseInt(value, 10).toString(16).padStart(2, '0').toUpperCase();
           continue;
         }
         // Find the "Lead-out" line (drutil)
-        else if (line.startsWith('Lead-out:')) {
+        else if (line.startsWith('Lead-out')) {
           // Extract the time and build the LBA
           const m = line.match(/Lead-out:\s+(\d+):(\d+)\.(\d+)/);
           const min = parseInt(m[1], 10);
           const sec = parseInt(m[2], 10);
           const frame = parseInt(m[3], 10);
           const lba = (min * 60 + sec) * 75 + frame;
+          tocStringArray[2] = lba.toString();
           tocHexArray[2] = lba.toString(16).padStart(8, '0').toUpperCase();
         }
         // Find the "Track" lines (drutil)
@@ -217,29 +223,33 @@ class DriveService extends EventEmitter {
           const sec = parseInt(m[3], 10);
           const frame = parseInt(m[4], 10);
           const lba = (min * 60 + sec) * 75 + frame;
+          tocStringArray[track + 2] = lba.toString();
           tocHexArray[track + 2] = lba.toString(16).padStart(8, '0').toUpperCase();
           continue;
         }
         // Find the "first: X last Y" line (wodim)
-        else if (line.startsWith('first:') && line.trim().indexOf('last:') != -1) {
+        else if (line.startsWith('first') && line.indexOf('last') != -1) {
           // Extract the two numbers and update first two TOC elements
           // Note the string length on these elements is only 2 bytes,
           // while the remaining sector market elements use 8 bytes
-          tocHexArray.splice(0, 2, ...line.match(/first:\s+(\d+)\s+last\s+(\d+)/).slice(1).map(x => parseInt(x, 10).toString(16).padStart(2, '0').toUpperCase()));
+          const values = line.match(/first:\s+(\d+)\s+last\s+(\d+)/).slice(1).map(x => parseInt(x, 10));
+          tocStringArray.splice(0, 2, ...values.map(x => x.toString()));
+          tocHexArray.splice(0, 2, ...values.map(x => x.toString(16).padStart(2, '0').toUpperCase()));
           continue;
         }
         // Find the "track:" marker lines (wodim)
-        else if (line.startsWith('track:')) {
+        else if (line.startsWith('track') && line.indexOf('lba') != -1) {
           // Extract the track number (or lead out sequence)
-          const [, trackNum, offset] = line.match(/track:\s*(\d+|lout)\s+lba:\s+(\d+)/) || [];
+          const [, track, lba] = (line.match(/track:\s*(\d+|lout)\s+lba:\s+(\d+)/) || []).map(x => parseInt(x, 10));
           // Apply a required standard sector offset
-          const offsetHex = (parseInt(offset) + SECTOR_OFFSET).toString(16).padStart(8, '0').toUpperCase();
-          if (trackNum === 'lout') {
+          if (track === 'lout') {
             // Lead out sector is after both the first track number and last track number elements
-            tocHexArray[2] = offsetHex;
+            tocStringArray[2] = (lba + SECTOR_OFFSET).toString();
+            tocHexArray[2] = (lba + SECTOR_OFFSET).toString(16).padStart(8, '0').toUpperCase();
           } else {
             // Then the actual track sector definitions start after the leadout sector element
-            tocHexArray[parseInt(trackNum) + 2] = offsetHex;
+            tocStringArray[track + 2] = (lba + SECTOR_OFFSET).toString();
+            tocHexArray[track + 2] = (lba + SECTOR_OFFSET).toString(16).padStart(8, '0').toUpperCase();
           }
         }
       }
@@ -248,7 +258,7 @@ class DriveService extends EventEmitter {
       return '';
     }
 
-    //console.log(toc.join('\n'));
+    console.log(tocStringArray.join(' '));
 
     // Join the TOC elements into a single string and calculate the SHA-1 hash
     return crypto.createHash('sha1')
