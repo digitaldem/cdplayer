@@ -98,7 +98,7 @@ class DriveService extends EventEmitter {
       let hasDisc = false;
       try {
         const output = await this._execCommand('wodim', `dev=${CD_DEVICE}`, '-toc');
-        hasDisc = output.includes('Track');
+        hasDisc = output?.includes('Track');
       } catch (err) {
         console.error(`Error polling CD device: ${err.message}`);
         hasDisc = false;
