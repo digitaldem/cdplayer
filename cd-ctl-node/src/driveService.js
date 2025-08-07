@@ -39,18 +39,18 @@ class DriveService extends EventEmitter {
   }
 
   async _startDevicePolling() {
-    let lastDevice = this._devicePath || null;
-    if (this._isMacOS) {
-      this._devicePollInterval = setInterval(async () => {
-        if (this._deviceLock) {
-          return;
-        }
-        this._deviceLock = true;
+    this._devicePollInterval = setInterval(async () => {
+      if (this._deviceLock || this._status.state !== PlaybackState.Stopped) {
+        return;
+      }
+      this._deviceLock = true;
 
-        let currentDevice = null;
-        try {
-          const output = await this._execCommand('diskutil', 'list');
-          const deviceBlocks = output.split(/\n(?=\/dev\/disk\d+)/);
+      let toc = null;
+      let currentDevice = null;
+      try {
+        if (this._isMacOS) {
+          const list = await this._execCommand('diskutil', 'list');
+          const deviceBlocks = list.split(/\n(?=\/dev\/disk\d+)/);
           for (const block of deviceBlocks) {
             if (block.includes('(external, physical)') && /Audio CD/i.test(block)) {
               const match = block.match(/^(\/dev\/disk\d+)/);
@@ -60,60 +60,35 @@ class DriveService extends EventEmitter {
               }
             }
           }
-        } catch (err) {
-          console.error(`Error polling macOS CD device: ${err.message}`);
+          if (currentDevice && !this._devicePath) {
+            toc = await this._execCommand('drutil', 'toc');
+          }
+        } else {
+          toc = await this._execCommand('wodim', `dev=${CD_DEVICE}`, '-toc');
+          currentDevice = (toc && toc.includes('Track')) ? CD_DEVICE : null;
         }
+      } catch (err) {
+        //console.error(`Error polling device: ${err.message}`);
+        toc = null;
+        currentDevice = null;
+      }
 
-        if (currentDevice && !lastDevice) {
+      if (currentDevice && !this._devicePath) {
+        // Newly inserted
+        console.log(`Inserted: ${toc}`);
+        if (toc) {
           this._ejectCountdown = 0;
-          lastDevice = currentDevice;
           this._devicePath = currentDevice;
-          const discId = await this._getDiscId();
+          const discId = await this._getDiscId(toc);
           this._metadata = discId ? await metadataService.get(discId) : null;
           this.emit('insert', this._metadata);
-        } else if (currentDevice && lastDevice) {
-          this._ejectCountdown = 0;
-          lastDevice = currentDevice;
-          this._devicePath = currentDevice;
-        } else if (!currentDevice && lastDevice) {
-          this._ejectCountdown++;
-          if (this._ejectCountdown >= 3) {
-            lastDevice = currentDevice;
-            this._devicePath = null;
-            this._metadata = null;
-            this.emit('eject');
-          }
         }
-        this._deviceLock = false;
-      }, 2000);
-      return;
-    }
-
-    this._devicePollInterval = setInterval(async () => {
-      if (this._deviceLock) {
-        return;
-      }
-      this._deviceLock = true;
-
-      let hasDisc = false;
-      try {
-        const output = await this._execCommand('wodim', `dev=${CD_DEVICE}`, '-toc');
-        hasDisc = output?.includes('Track');
-      } catch (err) {
-        console.error(`Error polling CD device: ${err.message}`);
-        hasDisc = false;
-      }
-
-      if (hasDisc && !this._devicePath) {
+      } else if (currentDevice && this._devicePath) {
+        // No-op
         this._ejectCountdown = 0;
-        this._devicePath = CD_DEVICE;
-        const discId = await this._getDiscId();
-        this._metadata = discId ? await metadataService.get(discId) : null;
-        this.emit('insert', this._metadata);
-      } else if (hasDisc && this._devicePath) {
-        this._ejectCountdown = 0;
-        this._devicePath = CD_DEVICE;
-      } else if (!hasDisc && this._devicePath) {
+      } else if (!currentDevice && this._devicePath) {
+        // Newly removed
+        console.log('Ejected');
         this._ejectCountdown++;
         if (this._ejectCountdown >= 3) {
           this._devicePath = null;
@@ -189,56 +164,51 @@ class DriveService extends EventEmitter {
     try {
       const { stdout, stderr } = await execAsync(command.join(' '));
       if (stderr) {
-        console.error(`Stderr: ${stderr}`);
         throw new Error(stderr);
       }
-      console.error(`Out: ${stdout.trim()}`);
+      // console.info(`StdOut: ${stdout.trim()}`);
       return stdout.trim();
     } catch (error) {
-      console.error(`Error: ${error.message}`);
+      console.error(`StdErr: ${error.message}`);
     }
   }
 
-  async _getDiscId() {
-    // Allocate a filled string array of 102 '00000000's
-    const toc = new Array(102).fill('0'.repeat(8));
+  async _getDiscId(tocString) {
+    // Allocate a filled hex string array of 102 '00000000's
+    const tocHexArray = new Array(102).fill('0'.repeat(8));
 
     try {
-      // Get disc TOC from command line
-      const output = (this._isMacOS)
-        ? await this._execCommand('drutil', 'toc')
-        : await this._execCommand('wodim', `dev=${this._devicePath}`, '-toc');
-
-      // Begin to parse the command line output
-      for (const line of output.split('\n')) {
+      // Begin to parse the toc command line output
+      for (const tocLine of tocString.split('\n')) {
+        const line = tocLine.trim()
         // Find the "First track" line (drutil)
-        if (line.trim().startsWith('First track:')) {
+        if (line.startsWith('First track:')) {
           // Extract the number and update the first TOC element
           // Note the string length on these elements is only 2 bytes,
           // while the remaining sector market elements use 8 bytes
-          toc[0] = parseInt(line.match(/First track:\s+(\d+)/)[1], 10).toString(16).padStart(2, '0').toUpperCase();
+          tocHexArray[0] = parseInt(line.match(/First track:\s+(\d+)/)[1], 10).toString(16).padStart(2, '0').toUpperCase();
           continue;
         }
         // Find the "Last track" line (drutil)
-        else if (line.trim().startsWith('Last track:')) {
+        else if (line.startsWith('Last track:')) {
           // Extract the number and update the second TOC element
           // Note the string length on these elements is only 2 bytes,
           // while the remaining sector market elements use 8 bytes
-          toc[1] = parseInt(line.match(/Last track:\s+(\d+)/)[1], 10).toString(16).padStart(2, '0').toUpperCase();
+          tocHexArray[1] = parseInt(line.match(/Last track:\s+(\d+)/)[1], 10).toString(16).padStart(2, '0').toUpperCase();
           continue;
         }
         // Find the "Lead-out" line (drutil)
-        else if (line.trim().startsWith('Lead-out:')) {
+        else if (line.startsWith('Lead-out:')) {
           // Extract the time and build the LBA
           const m = line.match(/Lead-out:\s+(\d+):(\d+)\.(\d+)/);
           const min = parseInt(m[1], 10);
           const sec = parseInt(m[2], 10);
           const frame = parseInt(m[3], 10);
           const lba = (min * 60 + sec) * 75 + frame;
-          toc[2] = lba.toString(16).padStart(8, '0').toUpperCase();
+          tocHexArray[2] = lba.toString(16).padStart(8, '0').toUpperCase();
         }
         // Find the "Track" lines (drutil)
-        else if (line.trim().indexOf('Track') != -1) {
+        else if (line.indexOf('Track') != -1) {
           // Extract the time and build the LBA
           const m = line.match(/Track\s+(\d+):\s+(\d+):(\d+)\.(\d+)/);
           const track = parseInt(m[1], 10);
@@ -246,29 +216,29 @@ class DriveService extends EventEmitter {
           const sec = parseInt(m[3], 10);
           const frame = parseInt(m[4], 10);
           const lba = (min * 60 + sec) * 75 + frame;
-          toc[track + 2] = lba.toString(16).padStart(8, '0').toUpperCase();
+          tocHexArray[track + 2] = lba.toString(16).padStart(8, '0').toUpperCase();
           continue;
         }
         // Find the "first: X last Y" line (wodim)
-        else if (line.trim().startsWith('first:') && line.trim().indexOf('last:') != -1) {
+        else if (line.startsWith('first:') && line.trim().indexOf('last:') != -1) {
           // Extract the two numbers and update first two TOC elements
           // Note the string length on these elements is only 2 bytes,
           // while the remaining sector market elements use 8 bytes
-          toc.splice(0, 2, ...line.match(/first:\s+(\d+)\s+last\s+(\d+)/).slice(1).map(x => parseInt(x, 10).toString(16).padStart(2, '0').toUpperCase()));
+          tocHexArray.splice(0, 2, ...line.match(/first:\s+(\d+)\s+last\s+(\d+)/).slice(1).map(x => parseInt(x, 10).toString(16).padStart(2, '0').toUpperCase()));
           continue;
         }
         // Find the "track:" marker lines (wodim)
-        else if (line.trim().startsWith('track:')) {
+        else if (line.startsWith('track:')) {
           // Extract the track number (or lead out sequence)
           const [, trackNum, offset] = line.match(/track:\s*(\d+|lout)\s+lba:\s+(\d+)/) || [];
           // Apply a required standard sector offset
           const offsetHex = (parseInt(offset) + SECTOR_OFFSET).toString(16).padStart(8, '0').toUpperCase();
           if (trackNum === 'lout') {
             // Lead out sector is after both the first track number and last track number elements
-            toc[2] = offsetHex;
+            tocHexArray[2] = offsetHex;
           } else {
             // Then the actual track sector definitions start after the leadout sector element
-            toc[parseInt(trackNum) + 2] = offsetHex;
+            tocHexArray[parseInt(trackNum) + 2] = offsetHex;
           }
         }
       }
@@ -281,11 +251,11 @@ class DriveService extends EventEmitter {
 
     // Join the TOC elements into a single string and calculate the SHA-1 hash
     return crypto.createHash('sha1')
-                  .update(toc.join(''))
-                  .digest('base64')
-                  .replace(/\+/g, '.')
-                  .replace(/\//g, '_')
-                  .replace(/=/g, '-');
+                 .update(tocHexArray.join(''))
+                 .digest('base64')
+                 .replace(/\+/g, '.')
+                 .replace(/\//g, '_')
+                 .replace(/=/g, '-');
   }
 
   async getStatus() {
@@ -293,10 +263,6 @@ class DriveService extends EventEmitter {
   }
 
   async getMetadata() {
-    if (this._metadata == null) {
-      const discId = await this._getDiscId();
-      this._metadata = (discId) ? await metadataService.get(discId) : null;
-    }
     return this._metadata;
   }
 
