@@ -186,8 +186,8 @@ class DriveService extends EventEmitter {
         // Find the "First track" line (drutil)
         if (line.startsWith('First track')) {
           // Extract the number and update the first TOC element
-          // Note the string length on these elements is only 2 bytes,
-          // while the remaining sector market elements use 8 bytes
+          // Note the string length on this element is only 2 bytes,
+          // while the remaining sector market elements use all 8 bytes
           const value = line.match(/First track:\s+(\d+)/)[1];
           tocStringArray[0] = value.trim();
           tocHexArray[0] = parseInt(value, 10).toString(16).padStart(2, '0').toUpperCase();
@@ -196,8 +196,8 @@ class DriveService extends EventEmitter {
         // Find the "Last track" line (drutil)
         else if (line.startsWith('Last track')) {
           // Extract the number and update the second TOC element
-          // Note the string length on these elements is only 2 bytes,
-          // while the remaining sector market elements use 8 bytes
+          // Note the string length on this elements is only 2 bytes,
+          // while the remaining sector market elements use all 8 bytes
           const value = line.match(/Last track:\s+(\d+)/)[1];
           tocStringArray[1] = value.trim();
           tocHexArray[1] = parseInt(value, 10).toString(16).padStart(2, '0').toUpperCase();
@@ -205,7 +205,7 @@ class DriveService extends EventEmitter {
         }
         // Find the "Lead-out" line (drutil)
         else if (line.startsWith('Lead-out')) {
-          // Extract the time and build the LBA
+          // Extract the time and build the LBA sector
           const m = line.match(/Lead-out:\s+(\d+):(\d+)\.(\d+)/);
           const min = parseInt(m[1], 10);
           const sec = parseInt(m[2], 10);
@@ -214,9 +214,9 @@ class DriveService extends EventEmitter {
           tocStringArray[2] = lba.toString();
           tocHexArray[2] = lba.toString(16).padStart(8, '0').toUpperCase();
         }
-        // Find the "Track" lines (drutil)
+        // Find the remaining "Track" lines (drutil)
         else if (line.indexOf('Track') != -1) {
-          // Extract the time and build the LBA
+          // Extract the time and build the LBA sector
           const m = line.match(/Track\s+(\d+):\s+(\d+):(\d+)\.(\d+)/);
           const track = parseInt(m[1], 10);
           const min = parseInt(m[2], 10);
@@ -231,23 +231,23 @@ class DriveService extends EventEmitter {
         else if (line.startsWith('first') && line.indexOf('last') != -1) {
           // Extract the two numbers and update first two TOC elements
           // Note the string length on these elements is only 2 bytes,
-          // while the remaining sector market elements use 8 bytes
+          // while the remaining sector market elements use all 8 bytes
           const values = line.match(/first:\s+(\d+)\s+last\s+(\d+)/).slice(1).map(x => parseInt(x, 10));
           tocStringArray.splice(0, 2, ...values.map(x => x.toString()));
           tocHexArray.splice(0, 2, ...values.map(x => x.toString(16).padStart(2, '0').toUpperCase()));
           continue;
         }
-        // Find the "track:" marker lines (wodim)
+        // Find the remaining "track:" marker lines (wodim)
         else if (line.startsWith('track') && line.indexOf('lba') != -1) {
-          // Extract the track number (or lead out sequence)
+          // Extract the track number (will be NaN if the line is for the lead out sequence)
           const [, track, lba] = (line.match(/track:\s*(\d+|lout)\s+lba:\s+(\d+)/) || []).map(x => parseInt(x, 10));
-          // Apply a required standard sector offset
-          if (track === 'lout') {
-            // Lead out sector is after both the first track number and last track number elements
+          // Apply the required standard sector offset
+          if (Number.isNaN(track)) {
+            // Lead out sector is third, immediately after both the first track number and last track number elements
             tocStringArray[2] = (lba + SECTOR_OFFSET).toString();
             tocHexArray[2] = (lba + SECTOR_OFFSET).toString(16).padStart(8, '0').toUpperCase();
           } else {
-            // Then the actual track sector definitions start after the leadout sector element
+            // The remaining track LBA sector definitions start after the leadout element
             tocStringArray[track + 2] = (lba + SECTOR_OFFSET).toString();
             tocHexArray[track + 2] = (lba + SECTOR_OFFSET).toString(16).padStart(8, '0').toUpperCase();
           }
