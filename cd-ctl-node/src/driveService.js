@@ -48,25 +48,28 @@ class DriveService extends EventEmitter {
       let toc = null;
       let currentDevice = null;
       try {
-        toc = (this._isMacOS) ? await this._execCommand('drutil', 'toc') : await this._execCommand('wodim', `dev=${CD_DEVICE}`, '-toc');
-        if (toc?.match(/track/i)) {
-          if (this._isMacOS) {
-            // MacOS will need the actual /dev/diskN
-            const list = await this._execCommand('diskutil', 'list');
-            const deviceBlocks = list.split(/\n(?=\/dev\/disk\d+)/);
-            for (const block of deviceBlocks) {
-              if (block.includes('(external, physical)') && /Audio CD/i.test(block)) {
-                const match = block.match(/^(\/dev\/disk\d+)/);
-                if (match) {
-                  currentDevice = match[1];
-                  break;
-                }
+        if (this._isMacOS) {
+          // MacOS will need the actual /dev/diskN
+          const list = await this._execCommand('diskutil', 'list');
+          const deviceBlocks = list.split(/\n(?=\/dev\/disk\d+)/);
+          for (const block of deviceBlocks) {
+            if (block.includes('(external, physical)') && /Audio CD/i.test(block)) {
+              const match = block.match(/^(\/dev\/disk\d+)/);
+              if (match) {
+                currentDevice = match[1];
+                break;
               }
             }
-          } else {
-            // Use cdrom device symlink
-            currentDevice = CD_DEVICE;
           }
+        } else {
+          // Can use the cdrom device symlink
+          currentDevice = CD_DEVICE;
+        }
+
+        toc = (this._isMacOS) ? await this._execCommand('drutil', 'toc') : await this._execCommand('wodim', `dev=${CD_DEVICE}`, '-toc');
+        if (!toc?.match(/track/i)) {
+          // No TOC means no disc
+          currentDevice = null;
         }
       } catch (err) {
         //console.error(`Error polling device: ${err.message}`);
