@@ -94,7 +94,7 @@ class MetadataService {
           const media = release['media'][0];
 
           // Extract track data
-          if (media['tracks'] && media['tracks'].length > 0) {
+          if (media['tracks'] && media['tracks'].length === trackCount) {
             // Sort tracks by position and extract titles
             media['tracks'].sort((a, b) => a['position'] - b['position']);
             metadata.setTracks(media['tracks'].map(track => track['title']));
