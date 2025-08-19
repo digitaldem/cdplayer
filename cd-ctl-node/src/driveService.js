@@ -190,9 +190,14 @@ class DriveService extends EventEmitter {
           // Extract the number and update the first TOC element
           // Note the string length on this element is only 2 bytes,
           // while the remaining sector market elements use all 8 bytes
-          const value = line.match(/First track:\s+(\d+)/)[1];
-          tocStringArray[0] = value.trim();
-          tocHexArray[0] = parseInt(value, 10).toString(16).padStart(2, '0').toUpperCase();
+          const m = line.match(/First track:\s+(\d+)/);
+          let number = parseInt(m[1], 10) || 1;
+          if (number !== 1) {
+            console.warn(`First track listed as ${number} instead of '1'`);
+            number = 1;
+          };
+          tocStringArray[0] = number.toString();
+          tocHexArray[0] = number.toString(16).padStart(2, '0').toUpperCase();
           continue;
         }
         // Find the "Last track" line (drutil)
@@ -200,9 +205,10 @@ class DriveService extends EventEmitter {
           // Extract the number and update the second TOC element
           // Note the string length on this elements is only 2 bytes,
           // while the remaining sector market elements use all 8 bytes
-          const value = line.match(/Last track:\s+(\d+)/)[1];
-          tocStringArray[1] = value.trim();
-          tocHexArray[1] = parseInt(value, 10).toString(16).padStart(2, '0').toUpperCase();
+          const m = line.match(/Last track:\s+(\d+)/);
+          const number = parseInt(m[1], 10) || 1;
+          tocStringArray[1] = number.toString();
+          tocHexArray[1] = number.toString(16).padStart(2, '0').toUpperCase();
           continue;
         }
         // Find the "Lead-out" line (drutil)
@@ -234,9 +240,14 @@ class DriveService extends EventEmitter {
           // Extract the two numbers and update first two TOC elements
           // Note the string length on these elements is only 2 bytes,
           // while the remaining sector market elements use all 8 bytes
-          const values = line.match(/first:\s+(\d+)\s+last\s+(\d+)/).slice(1).map(x => parseInt(x, 10));
-          tocStringArray.splice(0, 2, ...values.map(x => x.toString()));
-          tocHexArray.splice(0, 2, ...values.map(x => x.toString(16).padStart(2, '0').toUpperCase()));
+          const numbers = line.match(/first:\s+(\d+)\s+last\s+(\d+)/).slice(1).map(x => parseInt(x, 10) || 1);
+          if (numbers[0] !== 1) {
+            console.warn(`First track listed as ${numbers[0]} instead of '1'`);
+            numbers[0] = 1;
+          };
+
+          tocStringArray.splice(0, 2, ...numbers.map(x => x.toString()));
+          tocHexArray.splice(0, 2, ...numbers.map(x => x.toString(16).padStart(2, '0').toUpperCase()));
           continue;
         }
         // Find the remaining "track:" marker lines (wodim)
@@ -260,15 +271,18 @@ class DriveService extends EventEmitter {
       return '';
     }
 
-    console.info(tocStringArray.join(' '));
     // Join the TOC elements into a single string and calculate the SHA-1 hash
-    return [crypto.createHash('sha1')
-                  .update(tocHexArray.join(''))
-                  .digest('base64')
-                  .replace(/\+/g, '.')
-                  .replace(/\//g, '_')
-                  .replace(/=/g, '-'),
-            tocStringArray[1]];
+    const hash = crypto.createHash('sha1')
+                       .update(tocHexArray.join(''))
+                       .digest('base64')
+                       .replace(/\+/g, '.')
+                       .replace(/\//g, '_')
+                       .replace(/=/g, '-');
+
+    // Return the hash (discID) and the physical track count (per the TOC data)
+    // console.info(tocStringArray.join(' ').trim());
+    // console.info(hash);
+    return [hash, parseInt(tocStringArray[1], 10) || 0];
   }
 
   async getStatus() {
@@ -282,11 +296,21 @@ class DriveService extends EventEmitter {
   async eject() {
     await this._killPlayer();
     this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };
+
     try {
-      if (this._isMacOS) {
-        return await this._execCommand('drutil', 'tray', 'eject');
+      for (let i = 0; i < 3; i++) {
+        if (this._isMacOS) {
+          await this._execCommand('drutil', 'tray', 'eject');
+        } else {
+          await this._execCommand('eject', this._devicePath);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+        if (this._metadata == null) {
+          break;
+        }
       }
-      return await this._execCommand('eject', this._devicePath);
+      return;
     } catch (err) {
       console.error(`Error ejecting disc: ${err.message}`);
     }

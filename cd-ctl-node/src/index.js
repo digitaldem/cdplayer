@@ -33,4 +33,4 @@ server.on('connection', async (ws) => {
   });
 });
 
-console.log(`CD CTL player WebSocket server running on ws://${HOST}:${PORT}`);
+console.info(`CD CTL player WebSocket server running on ws://${HOST}:${PORT}`);

@@ -51,7 +51,7 @@ class MetadataService {
       // Call MusicBrainz API for lookup by DiscId
       const response = await axios.get(`${MB_URL}/${discId}?fmt=json&inc=artist-credits+recordings`, {
         headers: MB_HEADERS,
-        timeout: 5000,
+        timeout: 10000,
         httpsAgent: new https.Agent({ family: 4 })
       });
       mbdata = response.data;
