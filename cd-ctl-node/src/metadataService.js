@@ -1,11 +1,15 @@
 const axios = require('axios');
 const https = require('https');
+const { exec } = require('child_process');
+const { promisify } = require('util');
 const fs = require('fs').promises;
 const path = require('path');
 const { Low } = require('lowdb');
 const { JSONFile } = require('lowdb/node');
 const { MB_URL, MB_HEADERS } = require('./constants');
 const Metadata = require('./metadata');
+
+const run = promisify(exec);
 
 class MetadataService {
   constructor(dir) {
@@ -115,6 +119,7 @@ class MetadataService {
       db.data = data.toObject();
       await db.write();
       await fs.access(filename);
+      await this._publish(filename, `Add ${data.artist} - ${data.album} to metadata cache`)
       return true;
     } catch (err) {
       // Log but continue
@@ -133,6 +138,17 @@ class MetadataService {
       console.error('Error deleting metadata from cache:', err);
     }
     return false;
+  }
+
+  async _publish(filename, message) {
+    try {
+      await run(`git add ${filename}`);
+      await run(`git commit -m "${message}"`);
+      await run(`git pull --rebase origin HEAD`);
+      await run(`git push origin HEAD`);
+    } catch (err) {
+      console.error('Git operation failed:', err);
+    }
   }
 }
 
