@@ -184,12 +184,13 @@ class DriveService extends EventEmitter {
     try {
       const { stdout, stderr } = await execAsync(command.join(' '));
       if (stderr) {
-        throw new Error(stderr);
+        console.warn(`StdErr: ${stderr.trim()}`);
       }
+
       // console.info(`StdOut: ${stdout.trim()}`);
       return stdout.trim();
     } catch (err) {
-      // console.error(`StdErr: ${err.message}`);
+      console.error(`Error: ${err.message}`);
       throw err;
     }
   }
@@ -309,6 +310,20 @@ class DriveService extends EventEmitter {
 
   async getMetadata() {
     return this._metadata;
+  }
+
+  async reloadMetadata() {
+    try {
+      const output = await this._execCommand(
+        'git',
+        '-C',
+        '/home/cduser/cdplayer',
+        'pull',
+        'origin'
+      );
+    } catch (err) {
+      console.error(`Error on git pull of metadata: ${err.message}`);
+    }
   }
 
   async eject() {
