@@ -20,7 +20,16 @@ server.on('connection', async (ws) => {
   ws.on('message', async (message) => {
     try {
       const { action } = JSON.parse(message.toString());
-      if (typeof driveService[action] === 'function') await driveService[action]();
+      if (typeof driveService[action] === 'function') {
+        const result = await driveService[action]();
+        if (result != null) {
+          ws.send(JSON.stringify({ type: action, result }));
+        }
+      } else {
+        const message = `Unrecognized action: ${action}`;
+        console.info(message);
+        ws.send(JSON.stringify({ type: 'error', message }));
+      }
     } catch (e) {
       // ignore malformed messages
     }

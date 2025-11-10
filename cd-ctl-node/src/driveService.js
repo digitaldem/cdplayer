@@ -327,8 +327,10 @@ class DriveService extends EventEmitter {
         'pull',
         'origin'
       );
+      return true;
     } catch (err) {
       console.error(`Error on git pull of metadata: ${err.message}`);
+      return false;
     }
   }
 
@@ -349,9 +351,10 @@ class DriveService extends EventEmitter {
           break;
         }
       }
-      return;
+      return true;
     } catch (err) {
       console.error(`Error ejecting disc: ${err.message}`);
+      return false;
     }
   }
 
