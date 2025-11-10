@@ -103,12 +103,24 @@ class DriveService extends EventEmitter {
   }
 
   async _spawnPlayer() {
-    if (this._playerPollInterval || !this._devicePath) {
+    if (this._playerPollInterval || !this._devicePath || this._mplayer) {
       return;
     }
 
-    const mplayerParams = ['-slave', '-quiet', '-idle', '-cdrom-device', this._devicePath];
-    this._mplayer = spawn('mplayer', mplayerParams);
+    const mplayerParams = [
+      '-slave',
+      '-quiet',
+      '-idle',
+      '-nogui',
+      '-ao', 'alsa',
+      '-cdrom-device', this._devicePath,
+    ];
+    const mplayerEnv = {
+      ...process.env,
+      ALSA_CARD: 'Device',
+    };
+    this._mplayer = spawn('mplayer', mplayerParams, { env: mplayerEnv });
+
     this._mplayer.stdin.setDefaultEncoding('utf-8');
 
     let buffer = '';
@@ -134,6 +146,12 @@ class DriveService extends EventEmitter {
           }
         }
       }
+    });
+
+    this._mplayer.on('exit', (code, signal) => {
+      this._mplayer = null;
+      this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };
+      this._stopPlayerPolling();
     });
   }
 
