@@ -190,6 +190,12 @@ class DriveService extends EventEmitter {
       // console.info(`StdOut: ${stdout.trim()}`);
       return stdout.trim();
     } catch (err) {
+      const msg = err.message || '';
+      if ((cmd.includes('wodim') && /Cannot load media/i.test(msg)) || (cmd.includes('drutil') && /no media present/i.test(msg))) {
+        // Suppress no disc in drive when polling with wodim/drutil
+        return '';
+      }
+
       console.error(`Error: ${err.message}`);
       throw err;
     }
