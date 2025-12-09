@@ -132,6 +132,8 @@ class DriveService extends EventEmitter {
         if (line.startsWith('ANS_disc-current-title=')) {
           const track = parseInt(line.split('=')[1], 10) || 0;
           if (track !== this._status.track) {
+            this._status.track = track;
+            this._status.time = '0:00';
             this.emit('status', this._status);
           }
         }
@@ -143,6 +145,7 @@ class DriveService extends EventEmitter {
             const m = Math.floor(seconds / 60);
             const s = Math.floor(seconds % 60);
             this._status.time = `${m}:${s.toString().padStart(2, '0')}`;
+            //this.emit('status', this._status);
           }
         }
       }
@@ -168,7 +171,6 @@ class DriveService extends EventEmitter {
         this._mplayer.stdin.write('get_property disc-current-title\n');
         this._mplayer.stdin.write('get_time_pos\n');
       }
-      this.emit('status', this._status);
     }, 1000);
   }
 
