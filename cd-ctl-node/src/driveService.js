@@ -320,22 +320,6 @@ class DriveService extends EventEmitter {
     return this._metadata;
   }
 
-  async reloadMetadata() {
-    try {
-      const output = await this._execCommand(
-        'git',
-        '-C',
-        '/home/cduser/cdplayer',
-        'pull',
-        'origin'
-      );
-      return true;
-    } catch (err) {
-      console.error(`Error on git pull of metadata: ${err.message}`);
-      return false;
-    }
-  }
-
   async eject() {
     await this._killPlayer();
     this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };

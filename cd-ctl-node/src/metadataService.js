@@ -119,7 +119,10 @@ class MetadataService {
       db.data = data.toObject();
       await db.write();
       await fs.access(filename);
-      await this._publish(filename, `Add ${discId} to metadata cache`)
+      await run(`git add ${filename}`);
+      await run(`git commit -m "Add ${discId} to metadata cache"`);
+      await run(`git pull --rebase origin HEAD`);
+      await run(`git push origin HEAD`);
       return true;
     } catch (err) {
       // Log but continue
@@ -140,15 +143,15 @@ class MetadataService {
     return false;
   }
 
-  async _publish(filename, message) {
+  async refresh() {
     try {
-      await run(`git add ${filename}`);
-      await run(`git commit -m "${message}"`);
-      await run(`git pull --rebase origin HEAD`);
-      await run(`git push origin HEAD`);
+      await run(`git pull origin`);
+      return true;
     } catch (err) {
-      console.error('Git operation failed:', err);
+      // Log but continue
+      console.error(`Git pull of metadata failed: ${err.message}`);
     }
+    return false;
   }
 }
 

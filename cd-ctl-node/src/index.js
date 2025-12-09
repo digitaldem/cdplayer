@@ -1,6 +1,7 @@
 const WebSocket = require('ws');
 const { HOST, PORT } = require('./constants');
 const driveService = require('./driveService');
+const metadataService = require('./metadataService');
 
 const server = new WebSocket.Server({ host: HOST, port: PORT });
 
@@ -22,6 +23,9 @@ server.on('connection', async (ws) => {
         ws.send(JSON.stringify({ type: 'pong', result: null }));
       } else if (typeof driveService[action] === 'function') {
         const result = await driveService[action]();
+        ws.send(JSON.stringify({ type: action, result }));
+      } else if (typeof metadataService[action] === 'function') {
+        const result = await metadataService[action]();
         ws.send(JSON.stringify({ type: action, result }));
       } else {
         throw new Error(`Unrecognized action: ${action}`);
