@@ -119,7 +119,7 @@ class MetadataService {
       db.data = data.toObject();
       await db.write();
       await fs.access(filename);
-      await this._publish(filename, `Add ${data.artist} - ${data.album} to metadata cache`)
+      await this._publish(filename, `Add ${discId} to metadata cache`)
       return true;
     } catch (err) {
       // Log but continue
