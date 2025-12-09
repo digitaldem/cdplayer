@@ -5,22 +5,22 @@ const driveService = require('./driveService');
 const server = new WebSocket.Server({ host: HOST, port: PORT });
 
 server.on('connection', async (ws) => {
-  const sendState = async () => ws.send(JSON.stringify({ type: 'state', metadata: await driveService.getMetadata(), status: await driveService.getStatus() }));
-
-  sendState();
-
-  const insertHandler = metadata => ws.send(JSON.stringify({ type: 'insert', metadata }));
-  const ejectHandler = () => ws.send(JSON.stringify({ type: 'eject' }));
-  const statusHandler = status => ws.send(JSON.stringify({ type: 'status', status }));
-
-  driveService.on('insert', insertHandler);
-  driveService.on('eject', ejectHandler);
+  const statusHandler = (status) => ws.send(JSON.stringify({ type: 'status', status }));
   driveService.on('status', statusHandler);
+
+  const insertHandler = (metadata) => ws.send(JSON.stringify({ type: 'insert', info: metadata }));
+  driveService.on('insert', insertHandler);
+
+  const ejectHandler = () => ws.send(JSON.stringify({ type: 'eject', info: null }));
+  driveService.on('eject', ejectHandler);
 
   ws.on('message', async (message) => {
     try {
       const { action } = JSON.parse(message.toString());
-      if (typeof driveService[action] === 'function') {
+
+      if (action === 'ping') {
+        ws.send(JSON.stringify({ type: action, message: 'pong' }));
+      } else if (typeof driveService[action] === 'function') {
         const result = await driveService[action]();
         if (result != null) {
           ws.send(JSON.stringify({ type: action, result }));
@@ -36,10 +36,15 @@ server.on('connection', async (ws) => {
   });
 
   ws.on('close', () => {
+    driveService.off('status', statusHandler);
     driveService.off('insert', insertHandler);
     driveService.off('eject', ejectHandler);
-    driveService.off('status', statusHandler);
   });
+
+  const initialMetadata = await driveService.getMetadata();
+  const initialStatus = await driveService.getStatus();
+  ws.send(JSON.stringify({ type: 'connect', info: initialMetadata, status: initialStatus }));
+
 });
 
 console.info(`CD CTL player WebSocket server running on ws://${HOST}:${PORT}`);
