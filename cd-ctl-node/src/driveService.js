@@ -6,8 +6,8 @@ const path = require('path');
 const { promisify } = require('util');
 
 const { CD_DEVICE, SECTOR_OFFSET } = require('./constants');
+const { PlaybackState } = require('./playbackState');
 const metadataService = require('./metadataService');
-const PlaybackState = require('./playbackState');
 
 class DriveService extends EventEmitter {
   constructor() {
