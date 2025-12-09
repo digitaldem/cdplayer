@@ -19,19 +19,16 @@ server.on('connection', async (ws) => {
       const { action } = JSON.parse(message.toString());
 
       if (action === 'ping') {
-        ws.send(JSON.stringify({ type: action, message: 'pong' }));
+        ws.send(JSON.stringify({ type: 'pong', result: null }));
       } else if (typeof driveService[action] === 'function') {
         const result = await driveService[action]();
-        if (result != null) {
-          ws.send(JSON.stringify({ type: action, result }));
-        }
+        ws.send(JSON.stringify({ type: action, result }));
       } else {
-        const message = `Unrecognized action: ${action}`;
-        console.info(message);
-        ws.send(JSON.stringify({ type: 'error', message }));
+        throw new Error(`Unrecognized action: ${action}`);
       }
     } catch (e) {
-      // ignore malformed messages
+      console.info(e.message);
+      ws.send(JSON.stringify({ type: 'error', message: e.message }));
     }
   });
 
