@@ -1,41 +1,57 @@
 const axios = require('axios');
+const fs = require('fs').promises;
 const https = require('https');
+const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
-const fs = require('fs').promises;
-const path = require('path');
 const { Low } = require('lowdb');
 const { JSONFile } = require('lowdb/node');
+
+const DiscInfo = require('./discInfo');
+const eventBus = require('./eventBus');
 const { MB_URL, MB_HEADERS } = require('./constants');
-const Metadata = require('./metadata');
 
 const run = promisify(exec);
 
-class MetadataService {
+class DiscService {
   constructor(dir) {
     // Singleton
-    if (MetadataService.instance) {
-      return MetadataService.instance;
+    if (DiscService.instance) {
+      return DiscService.instance;
     }
 
+    eventBus.on('insert', (toc) => this.setInfo(toc));
+    eventBus.on('eject', () => this.setInfo(''));
+
+    fs.mkdir(dir, { recursive: true }).catch(() => {});
     this.dir = dir;
-    fs.mkdir(this.dir, { recursive: true }).catch(() => {});
-    MetadataService.instance = this;
+    this._info = new DiscInfo('');
+    DiscService.instance = this;
   }
 
   static getInstance() {
-    if (!MetadataService.instance) {
-      new MetadataService(path.join(__dirname, '..', 'cache'));
+    if (!DiscService.instance) {
+      new DiscService(path.join(__dirname, '..', 'cache'));
     }
-    return MetadataService.instance;
+    return DiscService.instance;
   }
 
   _buildFileName(key) {
     return path.join(this.dir, `${key}.json`);
   }
 
-  async get(discId, trackCount) {
-    const metadata = new Metadata(discId, trackCount);
+  async getInfo() {
+    return this._info;
+  }
+
+  async setInfo(toc) {
+    this._info = new DiscInfo(toc);
+    const discId = this._info.discId;
+    const trackCount = this._info.tracks.length;
+    if (discId === '') {
+      eventBus.emit('info', this._info);
+      return;
+    }
 
     const filename = this._buildFileName(discId);
     try {
@@ -43,8 +59,9 @@ class MetadataService {
       const adapter = new JSONFile(filename);
       const db = new Low(adapter, {});
       await db.read();
-      metadata.fromObject(db.data || {});
-      return metadata;
+      this._info.fromObject(db.data || {});
+      eventBus.emit('info', this._info);
+      return;
     } catch (err) {
       // Log but continue to fetch data from the API
       //console.error('Error reading metadata from cache:', err);
@@ -82,16 +99,16 @@ class MetadataService {
 
         // Extract basic data
         if (release['artist-credit'] && release['artist-credit'].length > 0) {
-          metadata.setArtist(release['artist-credit'].map(ac => ac['name']).join(', ') || null);
+          this._info.setArtist(release['artist-credit'].map(ac => ac['name']).join(', ') || null);
         }
         if (release['date'] && release['date'].length > 0) {
-          metadata.setYear(release['date'].split(/[-/]/)[0] || null);
+          this._info.setYear(release['date'].split(/[-/]/)[0] || null);
         }
         if (release['title'] && release['title'].length > 0) {
-          metadata.setAlbum(release['title'] || null);
+          this._info.setAlbum(release['title'] || null);
         }
         if (release['cover-art-archive'] && release['cover-art-archive']['front']) {
-          metadata.setAlbumArt(`https://coverartarchive.org/release/${release['id']}/front`);
+          this._info.setAlbumArt(`https://coverartarchive.org/release/${release['id']}/front`);
         }
         if (release['media'] && release['media'].length > 0) {
           //TODO: Handle multi disc sets
@@ -101,58 +118,46 @@ class MetadataService {
           if (media['tracks'] && media['tracks'].length === trackCount) {
             // Sort tracks by position and extract titles
             media['tracks'].sort((a, b) => a['position'] - b['position']);
-            metadata.setTracks(media['tracks'].map(track => track['title']));
+            this._info.setTracks(media['tracks'].map(track => track['title']));
           }
         }
       }
-      await this.set(discId, metadata);
-    }
 
-    return metadata;
-  }
-
-  async set(discId, data) {
-    const filename = this._buildFileName(discId);
-    try {
-      const adapter = new JSONFile(filename);
-      const db = new Low(adapter, {});
-      db.data = data.toObject();
-      await db.write();
-      await fs.access(filename);
-      await run(`git add ${filename}`);
-      await run(`git commit -m "Add ${discId} to metadata cache"`);
-      await run(`git pull --rebase origin HEAD`);
-      await run(`git push origin HEAD`);
-      return true;
-    } catch (err) {
-      // Log but continue
-      console.error('Error writing metadata to cache:', err);
+      try {
+        const adapter = new JSONFile(filename);
+        const db = new Low(adapter, {});
+        db.data = this._info.toObject();
+        await db.write();
+        await fs.access(filename);
+        await run(`git add ${filename}`);
+        await run(`git commit -m "Add ${discId} to metadata cache"`);
+        await run(`git pull --rebase origin HEAD`);
+        await run(`git push origin HEAD`);
+      } catch (err) {
+        // Log but continue
+        console.error('Error writing and pushing metadata to git cache:', err);
+      }
     }
-    return false;
-  }
-
-  async remove(discId) {
-    const filename = this._buildFileName(discId);
-    try {
-      await fs.unlink(filename);
-      return true;
-    } catch (err) {
-      // Log but continue
-      console.error('Error deleting metadata from cache:', err);
-    }
-    return false;
+    eventBus.emit('info', this._info);
   }
 
   async refresh() {
     try {
       await run(`git pull origin`);
-      return true;
+
+      const filename = this._buildFileName(this._info.discId);
+      await fs.access(filename);
+      const adapter = new JSONFile(filename);
+      const db = new Low(adapter, {});
+      await db.read();
+      this._info.fromObject(db.data || {});
+      eventBus.emit('info', this._info);
     } catch (err) {
       // Log but continue
       console.error(`Git pull of metadata failed: ${err.message}`);
     }
-    return false;
+    return null;
   }
 }
 
-module.exports = MetadataService.getInstance();
+module.exports = DiscService.getInstance();
