@@ -64,7 +64,10 @@ class DriveService {
         }
 
         toc = (this._isMacOS) ? await this._execCommand('drutil', 'toc') : await this._execCommand('wodim', `dev=${CD_DEVICE}`, '-toc');
-        if (!toc?.match(/track/i)) {
+        if (toc?.match(/track/i)) {
+          const lastTrackMatch = (this._isMacOS) ? toc.match(/Last track:\s+(\d+)/) : toc.match(/first:\s+\d+\s+last\s+(\d+)/);
+          this._trackCount = (lastTrackMatch) ? parseInt(lastTrackMatch[1], 10) || 0 : 0;
+        } else {
           // No TOC means no disc
           currentDevice = null;
         }
@@ -77,8 +80,6 @@ class DriveService {
       if (currentDevice && !this._devicePath) {
         // Newly inserted
         if (toc) {
-          const lastTrackMatch = (this._isMacOS) ? toc.match(/Last track:\s+(\d+)/) : toc.match(/first:\s+\d+\s+last\s+(\d+)/);
-          this._trackCount = (lastTrackMatch) ? parseInt(lastTrackMatch[1], 10) || 0 : 0;
           this._ejectCountdown = 0;
           this._devicePath = currentDevice;
           eventBus.emit('insert', toc);
