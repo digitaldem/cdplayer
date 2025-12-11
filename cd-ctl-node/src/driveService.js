@@ -236,13 +236,16 @@ class DriveService {
       this._mplayer?.stdin.write('pause\n');
       this._status.state = PlaybackState.Playing;
       await this._startPlayerPolling();
+      return true;
       eventBus.emit('status', this._status);
     } else if (this._status.state === PlaybackState.Stopped) {
       this._mplayer?.stdin.write(`loadfile cdda://${this._status.track}\n`);
       this._status.state = PlaybackState.Playing;
       await this._startPlayerPolling();
       eventBus.emit('status', this._status);
+      return true;
     }
+    return false;
   }
 
   async pause() {
@@ -251,7 +254,9 @@ class DriveService {
       this._status.state = PlaybackState.Paused;
       await this._stopPlayerPolling();
       eventBus.emit('status', this._status);
+      return true;
     }
+    return false;
   }
 
   async stop() {
@@ -261,19 +266,23 @@ class DriveService {
       this._status.time = '0:00';
       await this._stopPlayerPolling();
       eventBus.emit('status', this._status);
+      return true;
     }
+    return false;
   }
 
   async next() {
     this._mplayer?.stdin.write('pt_step 1\n');
     this._status.track++;
     eventBus.emit('status', this._status);
+    return true;
   }
 
   async previous() {
     this._mplayer?.stdin.write('pt_step -1\n');
     this._status.track--;
     eventBus.emit('status', this._status);
+    return true;
   }
 }
 

@@ -22,7 +22,7 @@ server.on('connection', async (ws) => {
       const { action } = JSON.parse(message.toString());
 
       if (action === 'ping') {
-        ws.send(JSON.stringify({ type: 'pong', result: null }));
+        ws.send(JSON.stringify({ type: 'pong' }));
       } else if (typeof driveService[action] === 'function') {
         const result = await driveService[action]();
         ws.send(JSON.stringify({ type: action, result }));

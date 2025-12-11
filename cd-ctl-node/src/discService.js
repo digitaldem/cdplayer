@@ -152,11 +152,12 @@ class DiscService {
       await db.read();
       this._info.fromObject(db.data || {});
       eventBus.emit('info', this._info);
+      return true;
     } catch (err) {
       // Log but continue
       console.error(`Git pull of metadata failed: ${err.message}`);
     }
-    return null;
+    return false;
   }
 }
 
