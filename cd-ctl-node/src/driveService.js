@@ -127,6 +127,8 @@ class DriveService {
       let lines = buffer.split('\n');
       buffer = lines.pop();
       for (const line of lines) {
+        console.log(line);
+
         if (line.startsWith('ANS_disc-current-title=')) {
           const track = parseInt(line.split('=')[1], 10) || 0;
           if (track !== this._status.track) {
@@ -150,6 +152,7 @@ class DriveService {
         if (line.includes('EOF code:') || line.includes('Exiting...')) {
           if (this._status.state === PlaybackState.Playing && this._status.track < this._trackCount) {
             this._status.track++;
+            this._status.time = '0:00';
             this._mplayer.stdin.write(`loadfile cdda://${this._status.track}\n`);
             eventBus.emit('status', this._status);
           } else {
