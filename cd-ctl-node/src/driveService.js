@@ -138,7 +138,7 @@ class DriveService {
             const m = Math.floor(seconds / 60);
             const s = Math.floor(seconds % 60);
             this._status.time = `${m}:${s.toString().padStart(2, '0')}`;
-            //eventBus.emit('status', this._status);
+            eventBus.emit('status', this._status);
           }
         }
       }
