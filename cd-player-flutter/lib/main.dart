@@ -1,6 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:desktop_window/desktop_window.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 
 import './core/constants.dart';
 import './core/dependency_injection.dart';
@@ -11,9 +13,15 @@ import './app.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await DesktopWindow.setWindowSize(Size(Constants.WINDOW_SIZE_WIDTH, Constants.WINDOW_SIZE_HEIGHT));
+
+  await windowManager.ensureInitialized();
+  await windowManager.setSize(Size(Constants.WINDOW_SIZE_WIDTH, Constants.WINDOW_SIZE_HEIGHT));
+  if (Platform.isLinux) {
+    await windowManager.setFullScreen(true);
+  }
 
   await DependencyInjection.init();
+
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => DependencyInjection.getIt<PlayerProvider>())],
