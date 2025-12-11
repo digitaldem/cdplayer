@@ -19,6 +19,7 @@ class DriveService {
     this._deviceLock = false;
     this._ejectCountdown = 0;
     this._mplayer = null;
+    this._trackCount = 0;
     this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };
     DriveService.instance = this;
 
@@ -76,6 +77,8 @@ class DriveService {
       if (currentDevice && !this._devicePath) {
         // Newly inserted
         if (toc) {
+          const lastTrackMatch = (this._isMacOS) ? toc.match(/Last track:\s+(\d+)/) : toc.match(/first:\s+\d+\s+last\s+(\d+)/);
+          this._trackCount = (lastTrackMatch) ? parseInt(lastTrackMatch[1], 10) || 0 : 0;
           this._ejectCountdown = 0;
           this._devicePath = currentDevice;
           eventBus.emit('insert', toc);
@@ -88,6 +91,7 @@ class DriveService {
         this._ejectCountdown++;
         if (this._ejectCountdown >= 3) {
           this._devicePath = null;
+          this._trackCount = 0;
           eventBus.emit('eject');
         }
       }
@@ -146,8 +150,15 @@ class DriveService {
 
     this._mplayer.on('exit', (code, signal) => {
       this._mplayer = null;
-      this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };
       this._stopPlayerPolling();
+      if (this._status.state === PlaybackState.Playing && this._status.track < this._trackCount) {
+        this._status.track++;
+        this.play();
+        return;
+      }
+
+      this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };
+      eventBus.emit('status', this._status);
     });
   }
 
@@ -236,8 +247,8 @@ class DriveService {
       this._mplayer?.stdin.write('pause\n');
       this._status.state = PlaybackState.Playing;
       await this._startPlayerPolling();
-      return true;
       eventBus.emit('status', this._status);
+      return true;
     } else if (this._status.state === PlaybackState.Stopped) {
       this._mplayer?.stdin.write(`loadfile cdda://${this._status.track}\n`);
       this._status.state = PlaybackState.Playing;
