@@ -64,6 +64,7 @@ class DriveService {
         }
 
         toc = (this._isMacOS) ? await this._execCommand('drutil', 'toc') : await this._execCommand('wodim', `dev=${CD_DEVICE}`, '-toc');
+        //console.log(toc);
         if (toc?.match(/track/i)) {
           const lastTrackMatch = (this._isMacOS) ? toc.match(/Last track:\s+(\d+)/) : toc.match(/first:\s+\d+\s+last\s+(\d+)/);
           this._trackCount = (lastTrackMatch) ? parseInt(lastTrackMatch[1], 10) || 0 : 0;
@@ -250,7 +251,7 @@ class DriveService {
       await this._startPlayerPolling();
       eventBus.emit('status', this._status);
       return true;
-    } else if (this._status.state === PlaybackState.Stopped) {
+    } else {
       this._mplayer?.stdin.write(`loadfile cdda://${this._status.track}\n`);
       this._status.state = PlaybackState.Playing;
       await this._startPlayerPolling();
