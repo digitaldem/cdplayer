@@ -64,10 +64,8 @@ class DriveService {
         }
 
         toc = (this._isMacOS) ? await this._execCommand('drutil', 'toc') : await this._execCommand('wodim', `dev=${CD_DEVICE}`, '-toc');
-        console.log(toc);
         if (toc?.match(/track/i)) {
           const lastTrackMatch = (this._isMacOS) ? toc.match(/Last track:\s+(\d+)/) : toc.match(/first:\s+\d+\s+last\s+(\d+)/);
-          console.log(lastTrackMatch);
           this._trackCount = (lastTrackMatch) ? parseInt(lastTrackMatch[1], 10) || 0 : 0;
         } else {
           // No TOC means no disc
@@ -148,20 +146,23 @@ class DriveService {
             eventBus.emit('status', this._status);
           }
         }
+
+        if (line.includes('EOF code:') || line.includes('Exiting...')) {
+          if (this._status.state === PlaybackState.Playing && this._status.track < this._trackCount) {
+            this._status.track++;
+            this._mplayer.stdin.write(`loadfile cdda://${this._status.track}\n`);
+            eventBus.emit('status', this._status);
+          } else {
+            this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };
+            eventBus.emit('status', this._status);
+          }
+        }
       }
     });
 
     this._mplayer.on('exit', (code, signal) => {
-      console.log('mplayer exit');
       this._mplayer = null;
       this._stopPlayerPolling();
-      if (this._status.state === PlaybackState.Playing && this._status.track < this._trackCount) {
-        console.log('mplayer call play');
-        this._status.track++;
-        this.play();
-        return;
-      }
-
       this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };
       eventBus.emit('status', this._status);
     });
