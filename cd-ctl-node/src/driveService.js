@@ -129,7 +129,7 @@ class DriveService {
       for (const line of lines) {
         console.log(line);
 
-        if (line.startsWith('ANS_disc-current-title=')) {
+        if (line.startsWith('ANS_filename=')) {
           const track = parseInt(line.split('=')[1], 10) || 0;
           if (track !== this._status.track) {
             this._status.track = track;
@@ -137,6 +137,7 @@ class DriveService {
             eventBus.emit('status', this._status);
           }
         }
+
         if (line.startsWith('ANS_TIME_POSITION=')) {
           const seconds = parseFloat(line.split('=')[1]);
           if (isNaN(seconds)) {
@@ -149,17 +150,17 @@ class DriveService {
           }
         }
 
-        if (line.includes('EOF code:') || line.includes('Exiting...')) {
-          if (this._status.state === PlaybackState.Playing && this._status.track < this._trackCount) {
-            this._status.track++;
-            this._status.time = '0:00';
-            this._mplayer.stdin.write(`loadfile cdda://${this._status.track}\n`);
-            eventBus.emit('status', this._status);
-          } else {
-            this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };
-            eventBus.emit('status', this._status);
-          }
-        }
+        // if (line.includes('EOF code:') || line.includes('Exiting...')) {
+        //   if (this._status.state === PlaybackState.Playing && this._status.track < this._trackCount) {
+        //     this._status.track++;
+        //     this._status.time = '0:00';
+        //     this._mplayer.stdin.write(`loadfile cdda://${this._status.track}\n`);
+        //     eventBus.emit('status', this._status);
+        //   } else {
+        //     this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };
+        //     eventBus.emit('status', this._status);
+        //   }
+        // }
       }
     });
 
@@ -181,7 +182,7 @@ class DriveService {
   async _startPlayerPolling() {
     this._playerPollInterval = setInterval(() => {
       if (this._mplayer) {
-        this._mplayer.stdin.write('get_property disc-current-title\n');
+        this._mplayer.stdin.write('get_property filename\n');
         this._mplayer.stdin.write('get_time_pos\n');
       }
     }, 1000);
