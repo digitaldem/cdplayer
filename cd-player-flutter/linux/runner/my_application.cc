@@ -7,8 +7,6 @@
 
 #include "flutter/generated_plugin_registrant.h"
 
-g_setenv("WEBKIT_DISABLE_COMPOSITING_MODE", "1", true);
-
 struct _MyApplication {
   GtkApplication parent_instance;
   char** dart_entrypoint_arguments;
@@ -19,6 +17,9 @@ G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
+
+  g_setenv("WEBKIT_DISABLE_COMPOSITING_MODE", "1", true);
+
   GtkWindow* window = GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
 
   gtk_window_set_decorated(window, FALSE);
