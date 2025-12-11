@@ -125,7 +125,9 @@ class WebSocketClient {
     _stopHeartbeat();
     _pingTimer = Timer.periodic(heartbeat, (_) {
       try {
-        _channel.sink.add(jsonEncode({'action': 'ping'}));
+        final ping = jsonEncode({'action': 'ping'});
+        debugPrint('WS: -> $ping');
+        _channel.sink.add(ping);
       } catch (_) {
         _handleDisconnect();
       }
