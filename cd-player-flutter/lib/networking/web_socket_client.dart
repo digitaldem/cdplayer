@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'package:flutter/foundation.dart';
+import 'package:logger/logger.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+
+import '../core/dependency_injection.dart';
 
 enum ConnectionStatus { connected, disconnected, connecting }
 
@@ -10,6 +12,7 @@ class WebSocketClient {
   final Uri _uri;
   late WebSocketChannel _channel;
 
+  final _logger = DependencyInjection.resolve<Logger>();
   final _incomingController = StreamController<String>.broadcast();
   final _statusController = StreamController<ConnectionStatus>.broadcast();
   final List<String> _outgoingQueue = [];
@@ -33,7 +36,7 @@ class WebSocketClient {
 
   void send(String command, [Map<String, dynamic>? payload]) {
     final message = jsonEncode({'action': command, ...?payload});
-    debugPrint('WS: -> $message');
+    _logger.i('-> $message');
     try {
       _channel.sink.add(message);
     } catch (_) {
@@ -53,7 +56,11 @@ class WebSocketClient {
       _channel.stream.listen(
         (message) {
           if (message is String) {
-            debugPrint('WS: <- $message');
+            if (message == '{"type":"pong"}') {
+              _logger.d('<- $message');
+            } else {
+              _logger.i('<- $message');
+            }
             _incomingController.add(message);
           }
         },
@@ -126,7 +133,7 @@ class WebSocketClient {
     _pingTimer = Timer.periodic(heartbeat, (_) {
       try {
         final ping = jsonEncode({'action': 'ping'});
-        debugPrint('WS: -> $ping');
+        _logger.d('-> $ping');
         _channel.sink.add(ping);
       } catch (_) {
         _handleDisconnect();
@@ -140,7 +147,7 @@ class WebSocketClient {
   }
 
   void _setStatus(ConnectionStatus status) {
-    debugPrint('WS: $status');
+    _logger.i(status);
     if (!_statusController.isClosed) {
       _statusController.add(status);
     }

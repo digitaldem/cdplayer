@@ -12,7 +12,6 @@ import './app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DesktopWindow.setWindowSize(Size(Constants.WINDOW_SIZE_WIDTH, Constants.WINDOW_SIZE_HEIGHT));
-  //await DesktopWindow.setFullScreen(false);
 
   await DependencyInjection.init();
   runApp(
