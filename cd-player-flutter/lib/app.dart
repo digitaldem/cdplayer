@@ -16,7 +16,19 @@ class App extends StatelessWidget {
     if (playerProvider.connectionStatus == ConnectionStatus.connected) {
       return Scaffold(
         appBar: null,
-        body: SafeArea(child: Column(children: [Album(), PlaybackControls(), Spacer()])),
+        body: GestureDetector(
+          onTap: () => playerProvider.handleUserInteraction(),
+          behavior: HitTestBehavior.translucent,
+          child: SafeArea(
+            child: Column(
+              children: [
+                Album(), 
+                PlaybackControls(), 
+                Spacer()
+              ]
+            )
+          ),
+        ),
       );
     }
 
