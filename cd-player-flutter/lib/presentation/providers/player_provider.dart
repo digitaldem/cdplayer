@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 
-import '../../core/dependency_injection';
-import '../../core/display_sleep_manager';
+import '../../core/dependency_injection.dart';
+import '../../core/display_sleep_manager.dart';
 import '../../data/models/album_info.dart';
 import '../../data/models/player_status.dart';
 import '../../domain/entities/ialbum_info.dart';
@@ -101,12 +101,12 @@ class PlayerProvider extends ChangeNotifier {
         {
           final playerStatus = PlayerStatus.fromJson(decoded['status']);
           if (playerStatus.state != _playerStatus?.state || playerStatus.track != _playerStatus?.track) {
-            _playerStatus = playerStatus;
-            if (_playerStatus.state == PlaybackState.playing.value) {
+            if (playerStatus.state == PlaybackState.playing.value) {
               _displayManager.onPlaybackStarted();
             } else {
               _displayManager.onPlaybackStopped();
             }
+            _playerStatus = playerStatus;
             notifyListeners();
           }
           break;
