@@ -25,7 +25,13 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => DependencyInjection.getIt<PlayerProvider>())],
-      child: MaterialApp(debugShowCheckedModeBanner: false, theme: LightTheme.theme, darkTheme: DarkTheme.theme, home: const App()),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false, 
+        theme: LightTheme.theme, 
+        darkTheme: DarkTheme.theme, 
+        themeMode: ThemeMode.system,
+        home: const App(),
+      ),
     ),
   );
 }
