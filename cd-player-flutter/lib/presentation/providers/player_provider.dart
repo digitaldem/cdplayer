@@ -8,6 +8,7 @@ import '../../data/models/album_info.dart';
 import '../../data/models/player_status.dart';
 import '../../domain/entities/ialbum_info.dart';
 import '../../domain/entities/iplayer_status.dart';
+import '../../domain/entities/playback_state.dart';
 import '../../networking/web_socket_client.dart';
 
 class PlayerProvider extends ChangeNotifier {
@@ -25,11 +26,11 @@ class PlayerProvider extends ChangeNotifier {
 
   bool get hasDisc => _albumInfo != null && _albumInfo!.tracks.isNotEmpty;
   IAlbumInfo get albumInfo => _albumInfo ?? AlbumInfo(artist: 'No Disc', album: '', albumArt: '', year: '', tracks: List.empty());
-  IPlayerStatus get playerStatus => _playerStatus ?? PlayerStatus(state: 'stopped', track: 0, time: '0:00');
+  IPlayerStatus get playerStatus => _playerStatus ?? PlayerStatus(state: PlaybackState.stopped.value, track: 0, time: '0:00');
 
   bool isWorking = false;
-  bool get isPlaying => _playerStatus?.state == 'playing';
-  bool get isStopped => _playerStatus?.state == 'stopped';
+  bool get isPlaying => _playerStatus?.state == PlaybackState.playing.value;
+  bool get isStopped => _playerStatus?.state == PlaybackState.stopped.value;
 
   int get _currentTrack => _playerStatus?.track ?? 0;
   int get _trackCount => _albumInfo?.tracks.length ?? 0;
@@ -101,7 +102,7 @@ class PlayerProvider extends ChangeNotifier {
           final playerStatus = PlayerStatus.fromJson(decoded['status']);
           if (playerStatus.state != _playerStatus?.state || playerStatus.track != _playerStatus?.track) {
             _playerStatus = playerStatus;
-            if (_playerStatus.state == 'playing') {
+            if (_playerStatus.state == PlaybackState.playing.value) {
               _displayManager.onPlaybackStarted();
             } else {
               _displayManager.onPlaybackStopped();
