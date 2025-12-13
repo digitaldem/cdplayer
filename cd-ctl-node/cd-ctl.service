@@ -2,8 +2,8 @@
 
 [Unit]
 Description=CD-Controller API Service
-After=network.target sound.target
-Wants=sound.target
+After=network-online.target sound.target
+Wants=network-online.target sound.target
 
 [Service]
 ExecStart=/usr/bin/npm start
