@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 
+import '../../core/dependency_injection';
+import '../../core/display_sleep_manager';
 import '../../data/models/album_info.dart';
 import '../../data/models/player_status.dart';
 import '../../domain/entities/ialbum_info.dart';
@@ -9,6 +11,7 @@ import '../../domain/entities/iplayer_status.dart';
 import '../../networking/web_socket_client.dart';
 
 class PlayerProvider extends ChangeNotifier {
+  final _displayManager = DependencyInjection.resolve<DisplaySleepManager>();
   final WebSocketClient _socketClient;
   ConnectionStatus _socketStatus = ConnectionStatus.connecting;
 
@@ -98,6 +101,11 @@ class PlayerProvider extends ChangeNotifier {
           final playerStatus = PlayerStatus.fromJson(decoded['status']);
           if (playerStatus.state != _playerStatus?.state || playerStatus.track != _playerStatus?.track) {
             _playerStatus = playerStatus;
+            if (_playerStatus.state == 'playing') {
+              _displayManager.onPlaybackStarted();
+            } else {
+              _displayManager.onPlaybackStopped();
+            }
             notifyListeners();
           }
           break;
@@ -144,6 +152,10 @@ class PlayerProvider extends ChangeNotifier {
     isWorking = true;
     notifyListeners();
     _socketClient.send('refresh');
+  }
+
+  void handleUserInteraction() {
+    _displayManager.onUserInteraction();
   }
 
   @override
