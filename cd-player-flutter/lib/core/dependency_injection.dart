@@ -5,12 +5,16 @@ import 'package:logger/logger.dart';
 import '../networking/web_socket_client.dart';
 import '../presentation/providers/player_provider.dart';
 import './constants.dart';
+import './display_sleep_manager.dart';
 
 class DependencyInjection {
   static final getIt = GetIt.instance;
   static Future<void> init() async {
     // Logging
     getIt.registerSingleton<Logger>(Logger(printer: SimplePrinter(printTime: true, colors: true), filter: _CustomLogFilter()));
+
+    // Display Sleep
+    getIt.registerSingleton<DisplaySleepManager>(DisplaySleepManager(timeout: const Duration(minutes: 2)));
 
     // Networking
     getIt.registerLazySingleton<WebSocketClient>(() => WebSocketClient.build(Constants.WEB_SOCKET_URL));
