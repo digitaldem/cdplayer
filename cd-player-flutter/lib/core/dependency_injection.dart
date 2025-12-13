@@ -10,7 +10,7 @@ class DependencyInjection {
   static final getIt = GetIt.instance;
   static Future<void> init() async {
     // Logging
-    getIt.registerSingleton<Logger>(Logger(printer: SimplePrinter(), filter: _CustomLogFilter()));
+    getIt.registerSingleton<Logger>(Logger(printer: SimplePrinter(printTime: true, colors: true), filter: _CustomLogFilter()));
 
     // Networking
     getIt.registerLazySingleton<WebSocketClient>(() => WebSocketClient.build(Constants.WEB_SOCKET_URL));
