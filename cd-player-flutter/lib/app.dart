@@ -25,7 +25,6 @@ class App extends StatelessWidget {
               children: [
                 Album(),
                 Container(height: 2, width: double.infinity, color: theme.colorScheme.secondary),
-
                 PlaybackControls(),
                 Spacer(),
               ],
