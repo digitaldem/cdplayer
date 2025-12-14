@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
 
@@ -25,18 +24,4 @@ class DependencyInjection {
   }
 
   static T resolve<T extends Object>() => getIt<T>();
-}
-
-class _CustomLogFilter extends LogFilter {
-  @override
-  bool shouldLog(LogEvent event) {
-    if (event.level == Level.info) {
-      return true;
-    }
-    if (event.level == Level.debug) {
-      return kDebugMode;
-    }
-
-    return event.level.index >= Level.warning.index;
-  }
 }

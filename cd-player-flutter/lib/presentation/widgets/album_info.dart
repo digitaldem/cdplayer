@@ -10,14 +10,7 @@ class AlbumInfo extends StatelessWidget {
 
   String get albumWithYear => year.isNotEmpty ? '$album ($year)' : album;
 
-  const AlbumInfo({
-    super.key,
-    required this.artist,
-    required this.album,
-    required this.year,
-    required this.tracks,
-    required this.currentTrack,
-  });
+  const AlbumInfo({super.key, required this.artist, required this.album, required this.year, required this.tracks, required this.currentTrack});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +18,7 @@ class AlbumInfo extends StatelessWidget {
     final artistStyle = theme.textTheme.bodyLarge;
     final albumStyle = theme.textTheme.bodyMedium;
     final trackStyle = theme.textTheme.bodySmall;
-    final dimTrackStyle = trackStyle?.copyWith(color: (trackStyle?.color ?? theme.colorScheme.primary).withOpacity(0.5));
+    final dimTrackStyle = trackStyle?.copyWith(color: (trackStyle.color ?? theme.colorScheme.primary).withValues(alpha: 0.5));
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -33,24 +26,13 @@ class AlbumInfo extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _MarqueeText(
-            text: artist,
-            style: artistStyle,
-          ),
+          _MarqueeText(text: artist, style: artistStyle),
           const SizedBox(height: 8),
-          _MarqueeText(
-            text: albumWithYear,
-            style: albumStyle,
-          ),
+          _MarqueeText(text: albumWithYear, style: albumStyle),
           const SizedBox(height: 16),
           if (currentTrack > 0)
             Expanded(
-              child: _TrackList(
-                tracks: tracks,
-                currentTrack: currentTrack,
-                textStyle: trackStyle,
-                dimTextStyle: dimTrackStyle,
-              ),
+              child: _TrackList(tracks: tracks, currentTrack: currentTrack, textStyle: trackStyle, dimTextStyle: dimTrackStyle),
             ),
         ],
       ),
@@ -64,12 +46,7 @@ class _TrackList extends StatelessWidget {
   final TextStyle? textStyle;
   final TextStyle? dimTextStyle;
 
-  const _TrackList({
-    required this.tracks,
-    required this.currentTrack,
-    required this.textStyle,
-    required this.dimTextStyle,
-  });
+  const _TrackList({required this.tracks, required this.currentTrack, required this.textStyle, required this.dimTextStyle});
 
   @override
   Widget build(BuildContext context) {
@@ -83,10 +60,7 @@ class _TrackList extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: visibleTracks.indexed.map((record) {
             final (index, track) = (record.$1, record.$2);
-            return _MarqueeText(
-              text: track ?? '',
-              style: index == 0 ? textStyle : dimTextStyle,
-            );
+            return _MarqueeText(text: track ?? '', style: index == 0 ? textStyle : dimTextStyle);
           }).toList(),
         );
       },
@@ -112,10 +86,7 @@ class _MarqueeText extends StatelessWidget {
   final String text;
   final TextStyle? style;
 
-  const _MarqueeText({
-    required this.text,
-    required this.style,
-  });
+  const _MarqueeText({required this.text, required this.style});
 
   @override
   Widget build(BuildContext context) {
@@ -136,12 +107,7 @@ class _MarqueeText extends StatelessWidget {
                   fadingEdgeStartFraction: 0.05,
                   fadingEdgeEndFraction: 0.05,
                 )
-              : Text(
-                  text,
-                  style: style,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+              : Text(text, style: style, maxLines: 1, overflow: TextOverflow.ellipsis),
         );
       },
     );
