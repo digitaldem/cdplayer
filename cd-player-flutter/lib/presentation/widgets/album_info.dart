@@ -12,6 +12,9 @@ class AlbumInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final artistStyle = theme.textTheme.bodyLarge;
+    final albumStyle = theme.textTheme.bodyMedium;
+    final trackStyle = theme.textTheme.bodySmall;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -20,31 +23,43 @@ class AlbumInfo extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _marqueeText(artist, theme.textTheme.bodyLarge),
-          const SizedBox(height: 4),
-          _marqueeText((year.isNotEmpty) ? '$album - ($year)' : album, theme.textTheme.bodyMedium),
-          const SizedBox(height: 4),
-          if (currentTrack > 0 && currentTrack <= tracks.length) _marqueeText(tracks[currentTrack - 1] ?? '', theme.textTheme.bodySmall),
+          _marqueeText(artist, artistStyle, true),
+          const SizedBox(height: 8),
+          _marqueeText((year.isNotEmpty) ? '$album - ($year)' : album, albumStyle, true),
+          const SizedBox(height: 8),
+          if (currentTrack != 0)
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final maxVisibleTracks = _calculateMaxVisibleTracks(constraints.maxHeight, trackStyle);
+                final startIndex = (currentTrack - 1).clamp(0, tracks.length - 1);
+                final remainingTracks = tracks.sublist(startIndex).take(maxVisibleTracks).toList().asMap();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: remainingTracks.entries.map((entry) => _marqueeText(entry.value ?? '', trackStyle, (entry.key == 0))).toList(),
+                );
+              },
+            ),
         ],
       ),
     );
   }
 
-  Widget _marqueeText(String text, TextStyle? style) {
+  Widget _marqueeText(String text, TextStyle? textStyle, bool canScroll) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final tp = TextPainter(
-          text: TextSpan(text: text, style: style),
+          text: TextSpan(text: text, style: textStyle),
           maxLines: 1,
           textDirection: TextDirection.ltr,
         )..layout(minWidth: 0, maxWidth: double.infinity);
 
         return SizedBox(
-          height: style?.fontSize != null ? style!.fontSize! * 1.5 : 24,
-          child: (tp.width > constraints.maxWidth)
+          height: textStyle?.fontSize != null ? textStyle!.fontSize! * 1.5 : 24,
+          child: (canScroll && tp.width > constraints.maxWidth)
               ? Marquee(
                   text: text,
-                  style: style,
+                  style: textStyle,
                   scrollAxis: Axis.horizontal,
                   blankSpace: 100.0,
                   velocity: 25.0,
@@ -52,9 +67,26 @@ class AlbumInfo extends StatelessWidget {
                   fadingEdgeStartFraction: 0.05,
                   fadingEdgeEndFraction: 0.05,
                 )
-              : Text(text, style: style),
+              : Text(
+                   text, 
+                   style: (!canScroll && textStyle.color != null) ? textStyle.copyWith(color: textStyle.color!.withOpacity(0.5)) : textStyle,
+                ),
         );
       },
     );
+  }
+
+  int _calculateMaxVisibleTracks(double availableHeight, TextStyle textStyle) {
+    final textPainter = TextPainter(
+      text: TextSpan(text: 'Text', style: textStyle),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+    
+    final itemHeight = textPainter.height;
+    final maxItems = (availableHeight / itemHeight).floor();
+    
+    textPainter.dispose();
+    return maxItems;
   }
 }
