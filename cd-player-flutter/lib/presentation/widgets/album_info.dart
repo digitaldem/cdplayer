@@ -25,7 +25,7 @@ class AlbumInfo extends StatelessWidget {
     final artistStyle = theme.textTheme.bodyLarge;
     final albumStyle = theme.textTheme.bodyMedium;
     final trackStyle = theme.textTheme.bodySmall;
-    final dimTrackStyle = trackStyle.copyWith(color: (trackStyle?.color ?? theme.colorScheme.primary).withOpacity(0.5));
+    final dimTrackStyle = trackStyle?.copyWith(color: (trackStyle?.color ?? theme.colorScheme.primary).withOpacity(0.5));
 
     return Padding(
       padding: const EdgeInsets.all(16),
