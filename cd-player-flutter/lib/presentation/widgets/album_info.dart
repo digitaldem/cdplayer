@@ -110,11 +110,11 @@ class _TrackList extends StatelessWidget {
 
 class _MarqueeText extends StatelessWidget {
   final String text;
-  final TextStyle? textStyle;
+  final TextStyle? style;
 
   const _MarqueeText({
     required this.text,
-    required this.textStyle,
+    required this.style,
   });
 
   @override
@@ -124,11 +124,11 @@ class _MarqueeText extends StatelessWidget {
         final textOverflows = _textExceedsWidth(constraints.maxWidth);
 
         return SizedBox(
-          height: textStyle?.fontSize != null ? textStyle!.fontSize! * 1.5 : 24.0,
+          height: style?.fontSize != null ? style!.fontSize! * 1.5 : 24.0,
           child: (textOverflows)
               ? Marquee(
                   text: text,
-                  style: textStyle,
+                  style: style,
                   scrollAxis: Axis.horizontal,
                   blankSpace: 100.0,
                   velocity: 25.0,
@@ -138,7 +138,7 @@ class _MarqueeText extends StatelessWidget {
                 )
               : Text(
                   text,
-                  style: textStyle,
+                  style: style,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -149,7 +149,7 @@ class _MarqueeText extends StatelessWidget {
 
   bool _textExceedsWidth(double maxWidth) {
     final textPainter = TextPainter(
-      text: TextSpan(text: text, style: textStyle),
+      text: TextSpan(text: text, style: style),
       maxLines: 1,
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: double.infinity);
