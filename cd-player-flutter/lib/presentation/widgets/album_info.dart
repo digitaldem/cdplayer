@@ -19,7 +19,7 @@ class AlbumInfo extends StatelessWidget {
     final artistStyle = theme.textTheme.bodyLarge;
     final albumStyle = theme.textTheme.bodyMedium;
     final trackStyle = theme.textTheme.bodySmall;
-    final dimTrackStyle = trackStyle?.copyWith(color: (trackStyle.color ?? theme.colorScheme.primary).withValues(alpha: 0.5));
+    final dimTrackStyle = trackStyle?.copyWith(color: (trackStyle.color ?? theme.colorScheme.primary).withValues(alpha: 0.25));
 
     return SizedBox(
       height: size,
