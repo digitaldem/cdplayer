@@ -6,6 +6,8 @@ import './album_art.dart';
 import './album_info.dart';
 
 class Album extends StatelessWidget {
+  static const double size = 400.0;
+
   const Album({super.key});
 
   @override
@@ -17,7 +19,7 @@ class Album extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: AlbumArt(albumArtUrl: albumInfo.albumArt ?? '', size: 400)),
+        Expanded(child: AlbumArt(albumArtUrl: albumInfo.albumArt ?? '', size: size)),
         Expanded(
           child: AlbumInfo(
             artist: albumInfo.artist ?? '',
@@ -25,6 +27,7 @@ class Album extends StatelessWidget {
             year: albumInfo.year ?? '',
             tracks: albumInfo.tracks,
             currentTrack: playerStatus.track,
+            size: size,
           ),
         ),
       ],
