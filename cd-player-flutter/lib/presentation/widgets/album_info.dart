@@ -7,10 +7,11 @@ class AlbumInfo extends StatelessWidget {
   final String year;
   final List<String?> tracks;
   final int currentTrack;
+  final double size;
 
   String get albumWithYear => year.isNotEmpty ? '$album ($year)' : album;
 
-  const AlbumInfo({super.key, required this.artist, required this.album, required this.year, required this.tracks, required this.currentTrack});
+  const AlbumInfo({super.key, required this.artist, required this.album, required this.year, required this.tracks, required this.currentTrack, required this.size});
 
   @override
   Widget build(BuildContext context) {
@@ -20,21 +21,24 @@ class AlbumInfo extends StatelessWidget {
     final trackStyle = theme.textTheme.bodySmall;
     final dimTrackStyle = trackStyle?.copyWith(color: (trackStyle.color ?? theme.colorScheme.primary).withValues(alpha: 0.5));
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _MarqueeText(text: artist, style: artistStyle),
-          const SizedBox(height: 8),
-          _MarqueeText(text: albumWithYear, style: albumStyle),
-          const SizedBox(height: 16),
-          if (currentTrack > 0)
-            Expanded(
-              child: _TrackList(tracks: tracks, currentTrack: currentTrack, textStyle: trackStyle, dimTextStyle: dimTrackStyle),
-            ),
-        ],
+    return SizedBox(
+      height: size,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _MarqueeText(text: artist, style: artistStyle),
+            const SizedBox(height: 8),
+            _MarqueeText(text: albumWithYear, style: albumStyle),
+            const SizedBox(height: 16),
+            if (currentTrack > 0)
+              Expanded(
+                child: _TrackList(tracks: tracks, currentTrack: currentTrack, textStyle: trackStyle, dimTextStyle: dimTrackStyle),
+              ),
+          ],
+        ),
       ),
     );
   }
