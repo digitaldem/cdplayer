@@ -292,17 +292,39 @@ class DriveService {
   }
 
   async next() {
-    this._mplayer?.stdin.write('pt_step 1\n');
-    this._status.track++;
-    eventBus.emit('status', this._status);
-    return true;
+    if (!this._mplayer) {
+      await this._spawnPlayer();
+    }
+
+    if (this._status.track < this._trackCount) {
+      this._status.track++;
+      this._status.time = '0:00';
+      this._mplayer.stdin.write(`loadfile cdda://${this._status.track}\n`);
+      if (this._status.state !== PlaybackState.Playing) {
+        this._mplayer?.stdin.write('stop\n');
+      }
+      eventBus.emit('status', this._status);
+      return true;
+    }
+    return false;
   }
 
   async previous() {
-    this._mplayer?.stdin.write('pt_step -1\n');
-    this._status.track--;
-    eventBus.emit('status', this._status);
-    return true;
+    if (!this._mplayer) {
+      await this._spawnPlayer();
+    }
+
+    if (this._status.track < 1) {
+      this._status.track--;
+      this._status.time = '0:00';
+      this._mplayer.stdin.write(`loadfile cdda://${this._status.track}\n`);
+      if (this._status.state !== PlaybackState.Playing) {
+        this._mplayer?.stdin.write('stop\n');
+      }
+      eventBus.emit('status', this._status);
+      return true;
+    }
+    return false;
   }
 }
 
