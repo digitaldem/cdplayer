@@ -111,7 +111,7 @@ class DiscInfo {
         }
       }
     } catch (err) {
-      console.error(`Error getting disc ID: ${err.message}`);
+      console.warn(`Error getting disc ID: ${err.message}`);
       return ['', 0];
     }
 
@@ -124,8 +124,8 @@ class DiscInfo {
                        .replace(/=/g, '-');
 
     // Return the hash (discID) and the physical track count (per the TOC data)
-    // console.info(tocStringArray.join(' ').trim());
-    // console.info(hash);
+    // console.debug(tocStringArray.join(' ').trim());
+    // console.debug(hash);
     return [hash, parseInt(tocStringArray[1], 10) || 0];
   }
 

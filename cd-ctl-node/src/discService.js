@@ -64,7 +64,7 @@ class DiscService {
       return;
     } catch (err) {
       // Log but continue to fetch data from the API
-      //console.error('Error reading metadata from cache:', err);
+      //console.warn('Error reading metadata from cache:', err);
     }
 
     let mbdata = null;
@@ -82,11 +82,11 @@ class DiscService {
           //console.warn(`Disc ID ${discId} not found in MusicBrainz.`);
           mbdata = { releases: [] };
         } else {
-          console.error('Error fetching metadata from API:', err);
+          console.warn('Error fetching metadata from API:', err);
           mbdata = null;
         }
       } else {
-        console.error('Error fetching metadata from API:', err);
+        console.warn('Error fetching metadata from API:', err);
         mbdata = null;
       }
     }
@@ -135,7 +135,7 @@ class DiscService {
         await run(`git push origin HEAD`);
       } catch (err) {
         // Log but continue
-        console.error('Error writing and pushing metadata to git cache:', err);
+        console.warn('Error writing and pushing metadata to git cache:', err);
       }
     }
     eventBus.emit('info', this._info);
@@ -155,7 +155,7 @@ class DiscService {
       return true;
     } catch (err) {
       // Log but continue
-      console.error(`Git pull of metadata failed: ${err.message}`);
+      console.warn(`Git pull of metadata failed: ${err.message}`);
     }
     return false;
   }

@@ -24,16 +24,18 @@ server.on('connection', async (ws) => {
       if (action === 'ping') {
         ws.send(JSON.stringify({ type: 'pong' }));
       } else if (typeof driveService[action] === 'function') {
+        console.info(`Received action="${action}" drive request`);
         const result = await driveService[action]();
         ws.send(JSON.stringify({ type: action, result }));
       } else if (typeof discService[action] === 'function') {
+        console.info(`Received action="${action}" disc request`);
         const result = await discService[action]();
         ws.send(JSON.stringify({ type: action, result }));
       } else {
-        throw new Error(`Unrecognized action: ${action}`);
+        throw new Error(`Unrecognized action: "${action}"`);
       }
     } catch (e) {
-      console.info(e.message);
+      console.warn(e.message);
       ws.send(JSON.stringify({ type: 'error', message: e.message }));
     }
   });

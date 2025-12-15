@@ -100,7 +100,7 @@ class DriveService {
     }, 2000);
   }
 
-  async _spawnPlayer() {
+  _spawnPlayer() {
     if (this._playerPollInterval || !this._devicePath || this._mplayer) {
       return;
     }
@@ -117,8 +117,8 @@ class DriveService {
       ...process.env,
       ALSA_CARD: 'Device',
     };
+    console.info(`SPAWN mplayer ${mplayerParams.join(' ')}`);
     this._mplayer = spawn('mplayer', mplayerParams, { env: mplayerEnv });
-
     this._mplayer.stdin.setDefaultEncoding('utf-8');
 
     let buffer = '';
@@ -127,7 +127,7 @@ class DriveService {
       let lines = buffer.split('\n');
       buffer = lines.pop();
       for (const line of lines) {
-        console.log(line);
+        console.debug(line);
 
         if (line.startsWith('ANS_TIME_POSITION=')) {
           const seconds = parseFloat(line.split('=')[1]);
@@ -152,7 +152,7 @@ class DriveService {
             if (this._status.state === PlaybackState.Playing && this._status.track < this._trackCount) {
               this._status.track++;
               this._status.time = '0:00';
-              this._mplayer.stdin.write(`loadfile cdda://${this._status.track}\n`);
+              this._commandPlayer(`loadfile cdda://${this._status.track}`);
               eventBus.emit('status', this._status);
             } else {
               this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };
@@ -171,14 +171,22 @@ class DriveService {
     });
   }
 
-  async _killPlayer() {
+  _commandPlayer(command) {
     if (this._mplayer) {
+      console.info(`STDIN mplayer ${command}`);
+      this._mplayer.stdin.write(`${command}\n`);
+    }
+  }
+
+  _killPlayer() {
+    if (this._mplayer) {
+      console.info(`KILL mplayer [${this._mplayer.pid}]`);
       this._mplayer.kill();
       this._mplayer = null;
     }
   }
 
-  async _startPlayerPolling() {
+  _startPlayerPolling() {
     this._playerPollInterval = setInterval(() => {
       if (this._mplayer) {
         this._mplayer.stdin.write('get_property filename\n');
@@ -187,7 +195,7 @@ class DriveService {
     }, 1000);
   }
 
-  async _stopPlayerPolling() {
+  _stopPlayerPolling() {
     if (this._playerPollInterval) {
       clearInterval(this._playerPollInterval);
       this._playerPollInterval = null;
@@ -202,7 +210,7 @@ class DriveService {
         console.warn(`StdErr: ${stderr.trim()}`);
       }
 
-      // console.info(`StdOut: ${stdout.trim()}`);
+      // console.debug(`StdOut: ${stdout.trim()}`);
       return stdout.trim();
     } catch (err) {
       const msg = err.message || '';
@@ -221,7 +229,7 @@ class DriveService {
   }
 
   async eject() {
-    await this._killPlayer();
+    this._killPlayer();
     this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };
 
     try {
@@ -246,22 +254,22 @@ class DriveService {
 
   async play() {
     if (!this._mplayer) {
-      await this._spawnPlayer();
+      this._spawnPlayer();
       if (this._status.track === 0) {
         this._status.track = 1;
       }
     }
 
     if (this._status.state === PlaybackState.Paused) {
-      this._mplayer?.stdin.write('pause\n');
+      this._commandPlayer('pause');
       this._status.state = PlaybackState.Playing;
-      await this._startPlayerPolling();
+      this._startPlayerPolling();
       eventBus.emit('status', this._status);
       return true;
     } else {
-      this._mplayer?.stdin.write(`loadfile cdda://${this._status.track}\n`);
+      this._commandPlayer(`loadfile cdda://${this._status.track}`);
       this._status.state = PlaybackState.Playing;
-      await this._startPlayerPolling();
+      this._startPlayerPolling();
       eventBus.emit('status', this._status);
       return true;
     }
@@ -270,9 +278,9 @@ class DriveService {
 
   async pause() {
     if (this._status.state === PlaybackState.Playing) {
-      this._mplayer?.stdin.write('pause\n');
+      this._commandPlayer('pause');
       this._status.state = PlaybackState.Paused;
-      await this._stopPlayerPolling();
+      this._stopPlayerPolling();
       eventBus.emit('status', this._status);
       return true;
     }
@@ -281,10 +289,10 @@ class DriveService {
 
   async stop() {
     if (this._status.state !== PlaybackState.Stopped) {
-      this._mplayer?.stdin.write('stop\n');
+      this._commandPlayer('stop');
       this._status.state = PlaybackState.Stopped;
       this._status.time = '0:00';
-      await this._stopPlayerPolling();
+      this._stopPlayerPolling();
       eventBus.emit('status', this._status);
       return true;
     }
@@ -293,15 +301,15 @@ class DriveService {
 
   async next() {
     if (!this._mplayer) {
-      await this._spawnPlayer();
+      this._spawnPlayer();
     }
 
     if (this._status.track < this._trackCount) {
       this._status.track++;
       this._status.time = '0:00';
-      this._mplayer.stdin.write(`loadfile cdda://${this._status.track}\n`);
+      this._commandPlayer(`loadfile cdda://${this._status.track}`);
       if (this._status.state !== PlaybackState.Playing) {
-        this._mplayer?.stdin.write('stop\n');
+        this._commandPlayer('stop');
       }
       eventBus.emit('status', this._status);
       return true;
@@ -311,15 +319,15 @@ class DriveService {
 
   async previous() {
     if (!this._mplayer) {
-      await this._spawnPlayer();
+      this._spawnPlayer();
     }
 
-    if (this._status.track < 1) {
+    if (this._status.track > 1) {
       this._status.track--;
       this._status.time = '0:00';
-      this._mplayer.stdin.write(`loadfile cdda://${this._status.track}\n`);
+      this._commandPlayer(`loadfile cdda://${this._status.track}`);
       if (this._status.state !== PlaybackState.Playing) {
-        this._mplayer?.stdin.write('stop\n');
+        this._commandPlayer('stop');
       }
       eventBus.emit('status', this._status);
       return true;
