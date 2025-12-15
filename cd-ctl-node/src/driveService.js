@@ -125,6 +125,13 @@ class DriveService {
     this._mplayer = spawn('mplayer', mplayerParams, { env: mplayerEnv });
     this._mplayer.stdin.setDefaultEncoding('utf-8');
 
+    this._mplayer.on('spawn', () => {
+      if (this._trackCount > 0) {
+        this._commandPlayer('loadfile cdda://1');
+        this._commandPlayer('pause');
+      }
+    });
+  
     let buffer = '';
     this._mplayer.stdout.on('data', (data) => {
       buffer += data.toString();
