@@ -139,13 +139,6 @@ class DriveService {
             this._status.time = `${m}:${s.toString().padStart(2, '0')}`;
             eventBus.emit('status', this._status);
           }
-        } else if (line.startsWith('ANS_filename=')) {
-          const track = parseInt(line.split('=')[1], 10) || 0;
-          if (track !== this._status.track) {
-            this._status.track = track;
-            this._status.time = '0:00';
-            eventBus.emit('status', this._status);
-          }
         } else if (line.startsWith('ANS_ERROR=')) {
           const err = line.split('=')[1] || '';
           if (err === 'PROPERTY_UNAVAILABLE') {
@@ -189,7 +182,6 @@ class DriveService {
   _startPlayerPolling() {
     this._playerPollInterval = setInterval(() => {
       if (this._mplayer) {
-        this._mplayer.stdin.write('get_property filename\n');
         this._mplayer.stdin.write('get_time_pos\n');
       }
     }, 1000);
