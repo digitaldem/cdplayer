@@ -108,7 +108,7 @@ class DriveService {
     const mplayerParams = [
       '-nogui',
       '-slave',
-      '-really-quiet',
+      '-quiet',
       '-idle',
       '-ao', 'alsa',
       '-cdda', 'speed=4:paranoia=0',
