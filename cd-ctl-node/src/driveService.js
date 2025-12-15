@@ -82,6 +82,7 @@ class DriveService {
         if (toc) {
           this._ejectCountdown = 0;
           this._devicePath = currentDevice;
+          this._spawnPlayer();
           eventBus.emit('insert', toc);
         }
       } else if (currentDevice && this._devicePath) {
@@ -224,7 +225,10 @@ class DriveService {
   }
 
   async eject() {
-    this._killPlayer();
+    if (this._mplayer) {
+      this._killPlayer();
+    }
+    
     this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };
 
     try {
