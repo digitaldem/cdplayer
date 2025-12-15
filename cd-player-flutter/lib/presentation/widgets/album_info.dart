@@ -11,7 +11,15 @@ class AlbumInfo extends StatelessWidget {
 
   String get albumWithYear => year.isNotEmpty ? '$album ($year)' : album;
 
-  const AlbumInfo({super.key, required this.artist, required this.album, required this.year, required this.tracks, required this.currentTrack, required this.size});
+  const AlbumInfo({
+    super.key,
+    required this.artist,
+    required this.album,
+    required this.year,
+    required this.tracks,
+    required this.currentTrack,
+    required this.size,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -63,8 +71,8 @@ class _TrackList extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: visibleTracks.indexed.map((record) {
-            final (index, track) = (record.$1, record.$2);
-            return _MarqueeText(text: track ?? '', style: index == 0 ? textStyle : dimTextStyle);
+            final (index, track) = (record.$1, record.$2 ?? '');
+            return _MarqueeText(text: '${(currentTrack + index).toString().padLeft(2, '0')}. $track', style: index == 0 ? textStyle : dimTextStyle);
           }).toList(),
         );
       },
