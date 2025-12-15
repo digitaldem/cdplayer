@@ -138,7 +138,11 @@ class DriveService {
           isReady = true;
           if (this._trackCount > 0) {
             setTimeout(() => {
-              this._commandPlayer('loadfile cdda://1');
+              if (this._status.track === 0) {
+                this._status.track = 1;
+              }
+              this._status.time = '0:00';
+              this._commandPlayer(`loadfile cdda://${this._status.track}`);
               this._commandPlayer('pause');
             }, 100);
           }
@@ -237,7 +241,7 @@ class DriveService {
     if (this._mplayer) {
       this._killPlayer();
     }
-    
+
     this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00' };
 
     try {
@@ -263,9 +267,10 @@ class DriveService {
   async play() {
     if (!this._mplayer) {
       this._spawnPlayer();
-      if (this._status.track === 0) {
-        this._status.track = 1;
-      }
+    }
+
+    if (this._status.track === 0) {
+      this._status.track = 1;
     }
 
     if (this._status.state === PlaybackState.Paused) {
