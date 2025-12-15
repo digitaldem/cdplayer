@@ -110,10 +110,9 @@ class DriveService {
       '-slave',
       '-quiet',
       '-idle',
+      '-nocache',
       '-ao', 'alsa',
       '-cdda', 'speed=4:paranoia=0',
-      '-cache', '2048',
-      '-cache-min', '1',
       '-cdrom-device', this._devicePath,
     ];
     const mplayerEnv = {
