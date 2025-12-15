@@ -125,13 +125,7 @@ class DriveService {
     this._mplayer = spawn('mplayer', mplayerParams, { env: mplayerEnv });
     this._mplayer.stdin.setDefaultEncoding('utf-8');
 
-    this._mplayer.on('spawn', () => {
-      if (this._trackCount > 0) {
-        this._commandPlayer('loadfile cdda://1');
-        this._commandPlayer('pause');
-      }
-    });
-  
+    let isReady = false;
     let buffer = '';
     this._mplayer.stdout.on('data', (data) => {
       buffer += data.toString();
@@ -140,7 +134,15 @@ class DriveService {
       for (const line of lines) {
         console.debug(line);
 
-        if (line.startsWith('ANS_TIME_POSITION=')) {
+        if (!isReady && (line.includes('MPlayer') || line.includes('Starting playback'))) {
+          isReady = true;
+          if (this._trackCount > 0) {
+            setTimeout(() => {
+              this._commandPlayer('loadfile cdda://1');
+              this._commandPlayer('pause');
+            }, 100);
+          }
+        } else if (line.startsWith('ANS_TIME_POSITION=')) {
           const seconds = parseFloat(line.split('=')[1]);
           if (isNaN(seconds)) {
             this._status.time = '0:00';
@@ -272,8 +274,12 @@ class DriveService {
       this._startPlayerPolling();
       eventBus.emit('status', this._status);
       return true;
-    } else {
-      this._commandPlayer(`loadfile cdda://${this._status.track}`);
+    } else if (this._status.state === PlaybackState.Stopped) {
+      if (this._status.track === 1) {
+        this._commandPlayer('pause');
+      } else {
+        this._commandPlayer(`loadfile cdda://${this._status.track}`);
+      }
       this._status.state = PlaybackState.Playing;
       this._startPlayerPolling();
       eventBus.emit('status', this._status);
