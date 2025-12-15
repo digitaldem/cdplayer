@@ -108,10 +108,12 @@ class DriveService {
     const mplayerParams = [
       '-nogui',
       '-slave',
-      '-quiet',
+      '-really-quiet',
       '-idle',
       '-ao', 'alsa',
       '-cdda', 'speed=4:paranoia=0',
+      '-cache', '2048',
+      '-cache-min', '1',
       '-cdrom-device', this._devicePath,
     ];
     const mplayerEnv = {
