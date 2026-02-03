@@ -1,19 +1,19 @@
 {
   "discId": "1IwqilLs_mk4v.Sr66EcVzypkgs-",
-  "artist": null,
-  "year": null,
-  "album": null,
-  "albumArt": null,
+  "artist": "The Eclectics",
+  "year": "1997",
+  "album": "Idle Worship",
+  "albumArt": "https://i.discogs.com/4KGgRWaEkVbUru-vZ7xJTQCCiVXnmR6fmIi6UhCtFVk/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTI2NjMw/NDAtMTI5NTU3MTMz/Ni5qcGVn.jpeg",
   "tracks": [
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null
+    "Harry",
+    "Siddhartha",
+    "We Can Make It Happen",
+    "Had Enough",
+    "Laura",
+    "Things We Say",
+    "Tell The Time",
+    "New Found You",
+    "Near And Far",
+    "It's Not About You, Kevin"
   ]
 }
