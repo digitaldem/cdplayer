@@ -114,7 +114,7 @@ class DriveService {
       '-nocache',
       '-cache-min', '0',
       '-ao', 'alsa',
-      '-cdda', 'speed=8:paranoia=0',
+      '-cdda', 'speed=4:paranoia=1',
       '-cdrom-device', this._devicePath,
     ];
     const mplayerEnv = {
@@ -141,8 +141,9 @@ class DriveService {
               if (this._status.track === 0) {
                 this._status.track = 1;
               }
-              this._status.time = '0:00';
               this._commandPlayer(`loadfile cdda://${this._status.track}`);
+              this._status.length = 0;
+              this._status.time = '0:00';
               this._commandPlayer('get_time_length');
               this._commandPlayer('pause');
             }, 100);
@@ -163,10 +164,11 @@ class DriveService {
             const s = Math.floor(seconds % 60);
             this._status.time = `${m}:${s.toString().padStart(2, '0')}`;
             eventBus.emit('status', this._status);
-            if (this._status.length > 0 && seconds >= this._status.length && this._status.track < this._trackCount && this._status.state === PlaybackState.Playing) {
+            if (this._status.length > 0 && seconds >= this._status.length - 1.0 && this._status.track < this._trackCount && this._status.state === PlaybackState.Playing) {
               this._status.track++;
-              this._status.time = '0:00';
               this._commandPlayer(`loadfile cdda://${this._status.track}`);
+              this._status.length = 0;
+              this._status.time = '0:00';
               this._commandPlayer('get_time_length');
             }
           }
@@ -326,8 +328,9 @@ class DriveService {
 
     if (this._status.track < this._trackCount) {
       this._status.track++;
-      this._status.time = '0:00';
       this._commandPlayer(`loadfile cdda://${this._status.track}`);
+      this._status.length = 0;
+      this._status.time = '0:00';
       this._commandPlayer('get_time_length');
       if (this._status.state !== PlaybackState.Playing) {
         this._commandPlayer('stop');
@@ -345,8 +348,9 @@ class DriveService {
 
     if (this._status.track > 1) {
       this._status.track--;
-      this._status.time = '0:00';
       this._commandPlayer(`loadfile cdda://${this._status.track}`);
+      this._status.length = 0;
+      this._status.time = '0:00';
       this._commandPlayer('get_time_length');
       if (this._status.state !== PlaybackState.Playing) {
         this._commandPlayer('stop');
