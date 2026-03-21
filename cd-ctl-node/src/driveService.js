@@ -6,9 +6,7 @@ const { promisify } = require('util');
 
 const { PlaybackState } = require('./playbackState');
 const eventBus = require('./eventBus');
-const { CD_DEVICE } = require('./constants');
-
-const MPV_SOCKET = '/tmp/mpv-cd-socket';
+const { CD_DEVICE, AUDIO_DEVICE, MPV_SOCKET } = require('./constants');
 
 class DriveService {
   constructor() {
@@ -129,7 +127,7 @@ class DriveService {
       '--idle=yes',
       '--quiet',
       `--input-ipc-server=${MPV_SOCKET}`,
-      '--audio-device=pipewire/alsa_output.usb-BurrBrown_from_Texas_Instruments_USB_AUDIO_DAC-00.analog-stereo',
+      `--audio-device=${AUDIO_DEVICE}`,
       '--audio-buffer=1.0',
       `--cdda-speed=4`,
       '--cdda-paranoia=1',
