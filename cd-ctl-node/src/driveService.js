@@ -113,7 +113,8 @@ class DriveService {
       '-idle',
       '-nocache',
       '-cache-min', '0',
-      '-ao', 'alsa',
+      '-ao', 'alsa:device=hw=0,0',
+      '-audio-buffer', '1.0',
       '-cdda', 'speed=4:paranoia=1',
       '-cdrom-device', this._devicePath,
     ];
