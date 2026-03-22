@@ -22,9 +22,9 @@ class DriveService {
     this._socket = null;
     this._socketReady = false;
     this._trackCount = 0;
+    this._trackOffsets = []; // disc-absolute start time in seconds, 0-indexed per track
     this._requestId = 0;
     this._pendingRequests = {};
-    this._isAdvancing = false;
     this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00', length: 0 };
 
     DriveService.instance = this;
@@ -39,6 +39,68 @@ class DriveService {
       new DriveService();
     }
     return DriveService.instance;
+  }
+
+  // ---------------------------------------------------------------------------
+  // TOC parsing
+  // ---------------------------------------------------------------------------
+
+  // Returns array of track start times in seconds (0-indexed), e.g. [0, 183.5, 356.2]
+  //
+  // wodim -toc output:
+  //   track:  1 lba:         0 (        0) 00:02:00.00
+  //   track:  2 lba:     15327 (    61308) 00:05:24.27
+  //   track:lout lba:    123456 ...
+  //
+  // drutil toc output:
+  //   Track  1  Start: 00:02:00  Length: 00:03:24
+  _parseTocOffsets(toc) {
+    if (this._isMacOS) {
+      const offsets = [];
+      for (const line of toc.split('\n')) {
+        const m = line.match(/Track\s+\d+\s+Start:\s+(\d+):(\d+):(\d+)/i);
+        if (m) {
+          offsets.push(parseInt(m[1], 10) * 60 + parseInt(m[2], 10) + parseInt(m[3], 10) / 75);
+        }
+      }
+      return offsets;
+    }
+
+    // wodim: LBA values at 75 frames/sec
+    const offsets = [];
+    for (const line of toc.split('\n')) {
+      const m = line.match(/track:\s+(\d+)\s+lba:\s+(\d+)/i);
+      if (m) {
+        offsets.push(parseInt(m[2], 10) / 75);
+      }
+    }
+    return offsets;
+  }
+
+  // Given a disc-absolute position in seconds, return 1-based track number
+  _trackFromPosition(seconds) {
+    if (!this._trackOffsets.length) return 1;
+    let track = 1;
+    for (let i = 0; i < this._trackOffsets.length; i++) {
+      if (seconds >= this._trackOffsets[i]) {
+        track = i + 1;
+      } else {
+        break;
+      }
+    }
+    return Math.min(track, this._trackCount);
+  }
+
+  // Track-relative seconds from disc-absolute position
+  _trackRelativeTime(discSeconds, track) {
+    return Math.max(0, discSeconds - (this._trackOffsets[track - 1] ?? 0));
+  }
+
+  // Track length in seconds derived from TOC offsets
+  _trackLength(track) {
+    const start = this._trackOffsets[track - 1] ?? 0;
+    const end = this._trackOffsets[track] ?? this._discLength ?? 0;
+    return Math.max(0, end - start);
   }
 
   // ---------------------------------------------------------------------------
@@ -80,6 +142,8 @@ class DriveService {
             ? toc.match(/Last track:\s+(\d+)/)
             : toc.match(/first:\s+\d+\s+last\s+(\d+)/);
           this._trackCount = lastTrackMatch ? parseInt(lastTrackMatch[1], 10) || 0 : 0;
+          this._trackOffsets = this._parseTocOffsets(toc);
+          console.info(`TOC: ${this._trackCount} tracks, offsets: ${this._trackOffsets.map(o => o.toFixed(1)).join(', ')}`);
         } else {
           currentDevice = null;
         }
@@ -102,6 +166,7 @@ class DriveService {
         if (this._ejectCountdown >= 3) {
           this._devicePath = null;
           this._trackCount = 0;
+          this._trackOffsets = [];
           eventBus.emit('eject');
         }
       }
@@ -115,11 +180,8 @@ class DriveService {
   // ---------------------------------------------------------------------------
 
   _spawnPlayer() {
-    if (this._mpv || !this._devicePath) {
-      return;
-    }
+    if (this._mpv || !this._devicePath) return;
 
-    // Remove stale socket if present
     try { require('fs').unlinkSync(MPV_SOCKET); } catch (_) {}
 
     const mpvParams = [
@@ -129,7 +191,7 @@ class DriveService {
       `--input-ipc-server=${MPV_SOCKET}`,
       `--audio-device=${AUDIO_DEVICE}`,
       '--audio-buffer=1.0',
-      `--cdda-speed=4`,
+      '--cdda-speed=4',
       '--cdda-paranoia=1',
       `--cdrom-device=${this._devicePath}`,
     ];
@@ -150,7 +212,6 @@ class DriveService {
       eventBus.emit('status', this._status);
     });
 
-    // Give mpv a moment to create the socket
     setTimeout(() => this._connectSocket(), 500);
   }
 
@@ -221,15 +282,18 @@ class DriveService {
   }
 
   _onSocketReady() {
-    // Observe the events we care about
     this._ipcObserve('time-pos', 1);
     this._ipcObserve('duration', 2);
-    this._ipcObserve('end-file', 3);
 
-    // Pre-load track 1 in paused state so play() is instant
+    // Load full disc, seek to track 1 start, then pause
     if (this._trackCount > 0) {
       if (this._status.track === 0) this._status.track = 1;
-      this._ipcLoadTrack(this._status.track, true);
+      this._ipcSend('loadfile', ['cdda://', 'replace'])
+        .then(() => setTimeout(() => {
+          const offset = this._trackOffsets[this._status.track - 1] ?? 0;
+          this._ipcSend('seek', [offset, 'absolute'])
+            .then(() => setTimeout(() => this._ipcSend('set_property', ['pause', true]), 200));
+        }, 300));
     }
   }
 
@@ -247,7 +311,6 @@ class DriveService {
       console.debug(`IPC SEND ${msg.trim()}`);
       this._socket.write(msg);
 
-      // Timeout safety — resolve with null if mpv never responds
       setTimeout(() => {
         if (this._pendingRequests[id]) {
           delete this._pendingRequests[id];
@@ -263,17 +326,15 @@ class DriveService {
     this._socket.write(msg);
   }
 
-  _ipcLoadTrack(track, paused = false) {
-    this._isAdvancing = false;
-    this._status.length = 0;
+  // Seek to a track's disc-absolute start offset
+  _ipcSeekToTrack(track, paused = false) {
+    const offset = this._trackOffsets[track - 1] ?? 0;
     this._status.time = '0:00';
-    // loadfile cdda://N replace [options]
-    const flags = paused ? 'replace' : 'replace';
-    return this._ipcSend('loadfile', [`cdda://${track}`, flags])
+    this._status.length = this._trackLength(track);
+    return this._ipcSend('seek', [offset, 'absolute'])
       .then(() => {
         if (paused) {
-          // Set pause=yes after a short settle — mpv needs to open the file first
-          setTimeout(() => this._ipcSend('set_property', ['pause', true]), 200);
+          return setTimeout(() => this._ipcSend('set_property', ['pause', true]), 100);
         }
       });
   }
@@ -283,7 +344,6 @@ class DriveService {
   // ---------------------------------------------------------------------------
 
   _handleIpcMessage(msg) {
-    // Response to a request_id
     if (msg.request_id && this._pendingRequests[msg.request_id]) {
       const resolve = this._pendingRequests[msg.request_id];
       delete this._pendingRequests[msg.request_id];
@@ -291,79 +351,63 @@ class DriveService {
       return;
     }
 
-    // Property change events
     if (msg.event === 'property-change') {
       if (msg.name === 'time-pos' && msg.data != null) {
-        const seconds = parseFloat(msg.data);
-        if (!isNaN(seconds)) {
-          const m = Math.floor(seconds / 60);
-          const s = Math.floor(seconds % 60);
+        const discSeconds = parseFloat(msg.data);
+        if (!isNaN(discSeconds)) {
+          const track = this._trackFromPosition(discSeconds);
+          if (track !== this._status.track) {
+            this._status.track = track;
+            this._status.length = this._trackLength(track);
+          }
+          const trackSeconds = this._trackRelativeTime(discSeconds, track);
+          const m = Math.floor(trackSeconds / 60);
+          const s = Math.floor(trackSeconds % 60);
           this._status.time = `${m}:${s.toString().padStart(2, '0')}`;
           eventBus.emit('status', this._status);
-
-          // Auto-advance: within 1 second of end
-          if (
-            !this._isAdvancing &&
-            this._status.length > 0 &&
-            seconds >= this._status.length - 1.0 &&
-            this._status.track < this._trackCount &&
-            this._status.state === PlaybackState.Playing
-          ) {
-            this._isAdvancing = true;
-            this._status.track++;
-            this._ipcLoadTrack(this._status.track, false);
-          }
         }
       } else if (msg.name === 'duration' && msg.data != null) {
         const seconds = parseFloat(msg.data);
         if (!isNaN(seconds) && seconds > 0) {
-          this._status.length = seconds;
-          this._isAdvancing = false; // new track fully loaded — safe to advance again
+          this._discLength = seconds;
+          this._status.length = this._trackLength(this._status.track);
         }
       }
       return;
     }
 
-    // End of file event (track finished naturally)
-    if (msg.event === 'end-file') {
-      if (msg.reason === 'eof' && !this._isAdvancing) {
-        if (this._status.track < this._trackCount && this._status.state === PlaybackState.Playing) {
-          this._isAdvancing = true;
-          this._status.track++;
-          this._ipcLoadTrack(this._status.track, false);
-        } else if (this._status.track >= this._trackCount) {
-          // End of disc
-          this._status.state = PlaybackState.Stopped;
-          this._status.time = '0:00';
-          this._stopPositionPolling();
-          eventBus.emit('status', this._status);
-        }
-      }
+    if (msg.event === 'end-file' && msg.reason === 'eof') {
+      this._status.state = PlaybackState.Stopped;
+      this._status.time = '0:00';
+      this._stopPositionPolling();
+      eventBus.emit('status', this._status);
     }
   }
 
   // ---------------------------------------------------------------------------
-  // Position polling (mpv pushes time-pos via observe_property so this is just
-  // a fallback heartbeat to keep status fresh when the property event is quiet)
+  // Position polling — fallback heartbeat
   // ---------------------------------------------------------------------------
 
   _startPositionPolling() {
     if (this._positionPollInterval) return;
     this._positionPollInterval = setInterval(() => {
-      if (this._socketReady) {
-        this._ipcSend('get_property', ['time-pos'])
-          .then((val) => {
-            if (val != null) {
-              const seconds = parseFloat(val);
-              if (!isNaN(seconds)) {
-                const m = Math.floor(seconds / 60);
-                const s = Math.floor(seconds % 60);
-                this._status.time = `${m}:${s.toString().padStart(2, '0')}`;
-                eventBus.emit('status', this._status);
-              }
-            }
-          });
-      }
+      if (!this._socketReady) return;
+      this._ipcSend('get_property', ['time-pos'])
+        .then((val) => {
+          if (val == null) return;
+          const discSeconds = parseFloat(val);
+          if (isNaN(discSeconds)) return;
+          const track = this._trackFromPosition(discSeconds);
+          const trackSeconds = this._trackRelativeTime(discSeconds, track);
+          const m = Math.floor(trackSeconds / 60);
+          const s = Math.floor(trackSeconds % 60);
+          this._status.time = `${m}:${s.toString().padStart(2, '0')}`;
+          if (track !== this._status.track) {
+            this._status.track = track;
+            this._status.length = this._trackLength(track);
+          }
+          eventBus.emit('status', this._status);
+        });
     }, 1000);
   }
 
@@ -398,7 +442,7 @@ class DriveService {
   }
 
   // ---------------------------------------------------------------------------
-  // Public API — identical surface to original DriveService
+  // Public API
   // ---------------------------------------------------------------------------
 
   async getStatus() {
@@ -409,6 +453,8 @@ class DriveService {
     this._killPlayer();
     this._devicePath = null;
     this._trackCount = 0;
+    this._trackOffsets = [];
+    this._discLength = 0;
     this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00', length: 0 };
 
     try {
@@ -430,7 +476,6 @@ class DriveService {
 
   async play() {
     if (!this._mpv) this._spawnPlayer();
-
     if (this._status.track === 0) this._status.track = 1;
 
     if (this._status.state === PlaybackState.Paused) {
@@ -443,9 +488,9 @@ class DriveService {
 
     if (this._status.state === PlaybackState.Stopped) {
       if (this._socketReady) {
-        await this._ipcLoadTrack(this._status.track, false);
+        await this._ipcSeekToTrack(this._status.track, false);
+        await this._ipcSend('set_property', ['pause', false]);
       }
-      // else _onSocketReady will handle it once socket connects
       this._status.state = PlaybackState.Playing;
       this._startPositionPolling();
       eventBus.emit('status', this._status);
@@ -468,7 +513,8 @@ class DriveService {
 
   async stop() {
     if (this._status.state !== PlaybackState.Stopped) {
-      await this._ipcSend('stop');
+      await this._ipcSend('set_property', ['pause', true]);
+      await this._ipcSeekToTrack(this._status.track, true);
       this._status.state = PlaybackState.Stopped;
       this._status.time = '0:00';
       this._stopPositionPolling();
@@ -483,10 +529,9 @@ class DriveService {
 
     if (this._status.track < this._trackCount) {
       this._status.track++;
-      await this._ipcLoadTrack(this._status.track, this._status.state !== PlaybackState.Playing);
-      if (this._status.state === PlaybackState.Playing) {
-        this._startPositionPolling();
-      }
+      const paused = this._status.state !== PlaybackState.Playing;
+      await this._ipcSeekToTrack(this._status.track, paused);
+      if (!paused) this._startPositionPolling();
       eventBus.emit('status', this._status);
       return true;
     }
@@ -498,10 +543,9 @@ class DriveService {
 
     if (this._status.track > 1) {
       this._status.track--;
-      await this._ipcLoadTrack(this._status.track, this._status.state !== PlaybackState.Playing);
-      if (this._status.state === PlaybackState.Playing) {
-        this._startPositionPolling();
-      }
+      const paused = this._status.state !== PlaybackState.Playing;
+      await this._ipcSeekToTrack(this._status.track, paused);
+      if (!paused) this._startPositionPolling();
       eventBus.emit('status', this._status);
       return true;
     }
