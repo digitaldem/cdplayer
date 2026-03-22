@@ -407,6 +407,8 @@ class DriveService {
 
   async eject() {
     this._killPlayer();
+    this._devicePath = null;
+    this._trackCount = 0;
     this._status = { state: PlaybackState.Stopped, track: 0, time: '0:00', length: 0 };
 
     try {
