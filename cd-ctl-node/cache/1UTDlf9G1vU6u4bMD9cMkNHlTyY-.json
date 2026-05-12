@@ -1,12 +1,12 @@
 {
   "discId": "1UTDlf9G1vU6u4bMD9cMkNHlTyY-",
-  "artist": null,
-  "year": null,
-  "album": null,
-  "albumArt": null,
+  "artist": "Flatfoot 56",
+  "year": "2006",
+  "album": "The EP",
+  "albumArt": "https://i.discogs.com/-CVfZG1ZQZRTxLC7V6gCtS3EpTXQwDb3rWRAZYSJ7jc/rs:fit/g:sm/q:90/h:600/w:588/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE0ODM0/ODUwLTE1ODI0ODk4/MzUtOTgxNC5qcGVn.jpeg",
   "tracks": [
-    null,
-    null,
-    null
+    "Brotherhood",
+    "Knuckles Up",
+    "This Town"
   ]
 }
