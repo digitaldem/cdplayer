@@ -23,7 +23,7 @@ class DiscService {
     eventBus.on('insert', (toc) => this.setInfo(toc));
     eventBus.on('eject', () => this.setInfo(''));
 
-    fs.mkdir(dir, { recursive: true }).catch(() => {});
+    fs.mkdir(dir, { recursive: true }).catch(() => { });
     this.dir = dir;
     this._info = new DiscInfo('');
     DiscService.instance = this;
@@ -131,7 +131,7 @@ class DiscService {
         await fs.access(filename);
         await run(`git add ${filename}`);
         await run(`git commit -m "Add ${discId} to metadata cache"`);
-        await run(`git pull --rebase origin HEAD`);
+        await run(`git pull --autostash --rebase origin HEAD`);
         await run(`git push origin HEAD`);
       } catch (err) {
         // Log but continue

@@ -58,9 +58,12 @@ class DriveService {
     if (this._isMacOS) {
       const offsets = [];
       for (const line of toc.split('\n')) {
-        const m = line.match(/Track\s+\d+\s+Start:\s+(\d+):(\d+):(\d+)/i);
-        if (m) {
-          offsets.push(parseInt(m[1], 10) * 60 + parseInt(m[2], 10) + parseInt(m[3], 10) / 75);
+        const m1 = line.match(/Track\s+\d+\s+Start:\s+(\d+):(\d+):(\d+)/i);
+        const m2 = line.match(/Track\s+\d+:\s+(\d+):(\d+)\.(\d+)/i);
+        if (m1) {
+          offsets.push(parseInt(m1[1], 10) * 60 + parseInt(m1[2], 10) + parseInt(m1[3], 10) / 75);
+        } else if (m2) {
+          offsets.push(parseInt(m2[1], 10) * 60 + parseInt(m2[2], 10) + parseInt(m2[3], 10) / 75);
         }
       }
       return offsets;
@@ -143,7 +146,6 @@ class DriveService {
             : toc.match(/first:\s+\d+\s+last\s+(\d+)/);
           this._trackCount = lastTrackMatch ? parseInt(lastTrackMatch[1], 10) || 0 : 0;
           this._trackOffsets = this._parseTocOffsets(toc);
-          console.info(`TOC: ${this._trackCount} tracks, offsets: ${this._trackOffsets.map(o => o.toFixed(1)).join(', ')}`);
         } else {
           currentDevice = null;
         }
@@ -156,6 +158,7 @@ class DriveService {
         if (toc) {
           this._ejectCountdown = 0;
           this._devicePath = currentDevice;
+          console.info(`TOC: ${this._trackCount} tracks, offsets: ${this._trackOffsets.map(o => o.toFixed(1)).join(', ')}`);
           this._spawnPlayer();
           eventBus.emit('insert', toc);
         }
@@ -182,7 +185,7 @@ class DriveService {
   _spawnPlayer() {
     if (this._mpv || !this._devicePath) return;
 
-    try { require('fs').unlinkSync(MPV_SOCKET); } catch (_) {}
+    try { require('fs').unlinkSync(MPV_SOCKET); } catch (_) { }
 
     const mpvParams = [
       '--no-video',
@@ -198,6 +201,11 @@ class DriveService {
 
     console.info(`SPAWN mpv ${mpvParams.join(' ')}`);
     this._mpv = spawn('mpv', mpvParams);
+
+    this._mpv.on('error', (err) => {
+      console.error(`MPV spawn error: ${err.message}`);
+      this._mpv = null;
+    });
 
     this._mpv.stderr.on('data', (data) => {
       console.debug(`MPV STDERR ${data.toString().trim()}`);
@@ -230,7 +238,9 @@ class DriveService {
   // ---------------------------------------------------------------------------
 
   _connectSocket(attempt = 0) {
-    if (this._socket) return;
+    if (this._socket || !this._mpv) {
+      return;
+    }
 
     const sock = net.createConnection(MPV_SOCKET);
     let lineBuffer = '';
@@ -425,14 +435,15 @@ class DriveService {
   async _execCommand(...command) {
     const execAsync = promisify(exec);
     try {
-      const { stdout, stderr } = await execAsync(command.join(' '));
+      const { stdout, stderr } = await execAsync(command.join(' '), { timeout: 5000 });
       if (stderr) console.warn(`StdErr: ${stderr.trim()}`);
       return stdout.trim();
     } catch (err) {
       const msg = err.message || '';
       if (
         (command.includes('wodim') && /Cannot load media/i.test(msg)) ||
-        (command.includes('drutil') && /no media present/i.test(msg))
+        (command.includes('drutil') && /no media present/i.test(msg)) ||
+        err.killed || /Command failed/i.test(msg)
       ) {
         return '';
       }
