@@ -1,19 +1,19 @@
 {
   "discId": "p6ARYmIh8uToHVAUgWc3kszmTFM-",
-  "artist": null,
-  "year": null,
-  "album": null,
-  "albumArt": null,
+  "artist": "The Bollweevils",
+  "year": "2023",
+  "album": "Essential",
+  "albumArt": "https://i.discogs.com/H4g-B8tiXg9d6jh3fkmT9wAPI27Vs0I2RzuAEVGc4nA/rs:fit/g:sm/q:90/h:577/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTI2OTU2/OTIyLTE2ODcyNzIx/OTEtMzIxMS5qcGVn.jpeg",
   "tracks": [
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null
+    "Predisposition",
+    "Galt's Gulch",
+    "Disrespected Peggy Sue",
+    "Honesty",
+    "The Cutting Solution",
+    "Theme",
+    "Bottomless Pit",
+    "Our Glass",
+    "Resistance",
+    "Liniment And Tonic"
   ]
 }
