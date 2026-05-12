@@ -1,12 +1,12 @@
 {
   "discId": "V5Ly8XW6mc3fc2oTJnMJE1eP2lY-",
-  "artist": null,
-  "year": null,
-  "album": null,
-  "albumArt": null,
+  "artist": "Flatfoot 56",
+  "year": "2007",
+  "album": "The Sounds Of Midway EP",
+  "albumArt": "https://i.discogs.com/33n-XhSqlR9ix6UDioo18BdxI0JsdniY4czbGfPokD0/rs:fit/g:sm/q:90/h:300/w:300/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTI2OTQx/ODgtMTI5Njg1OTQ3/My5qcGVn.jpeg",
   "tracks": [
-    null,
-    null,
-    null
+    "City On A Hill",
+    "Warriors",
+    "Smoke Blower"
   ]
 }
