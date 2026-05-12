@@ -1,20 +1,20 @@
 {
   "discId": "qSomJJveKBmhGgvKa4cDU7to_1g-",
-  "artist": null,
-  "year": null,
-  "album": null,
-  "albumArt": null,
+  "artist": "Black Flag",
+  "year": "1984",
+  "album": "Family Man",
+  "albumArt": "https://i.discogs.com/HPS-aDIU0c47Zy7FJSHtqYJShToZb5dZK41mckzoo8U/rs:fit/g:sm/q:90/h:500/w:500/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTcxOTQz/NS0xMTYyMzA0Njg1/LmpwZWc.jpeg",
   "tracks": [
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null
+    "Family Man",
+    "Salt On A Slug",
+    "Hollywood Diary",
+    "Let Your Fingers Do The Walking",
+    "Shed Reading (Rattus Norvegicus)",
+    "No Deposit - No Return",
+    "Armageddon Man",
+    "Long Lost Dog Of It",
+    "I Won't Stick Any Of You Unless And Until I Can Stick All Of You!",
+    "Account For What?",
+    "The Pups Are Doggin' It"
   ]
 }
