@@ -1,21 +1,21 @@
 {
   "discId": "atUiADcRyitqBlCPm7pMJpTzsZA-",
-  "artist": null,
-  "year": null,
-  "album": null,
-  "albumArt": null,
+  "artist": "The Arrivals",
+  "year": "2003",
+  "album": "Exsenator Orange",
+  "albumArt": "https://i.discogs.com/P4hzus1-bxQibntpuHbyh2fJ5fWMLN35np307NMCmFc/rs:fit/g:sm/q:90/h:600/w:590/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTgwMTUy/OTItMTYxOTMxMDc3/My00NjYyLmpwZWc.jpeg",
   "tracks": [
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null
+    "Dar La Luz",
+    "Born With A Broken Heart",
+    "Analee",
+    "-1",
+    "Hell Can Wait",
+    "Just Another Union Song",
+    "Sleeping In",
+    "Design",
+    "Shouting Fire",
+    "This Is My Shovel, This Is My Grave",
+    "Dirty Inches",
+    "Goodnight From Paris"
   ]
 }
