@@ -1,19 +1,19 @@
 {
   "discId": "X7LbZWuU53WxCEl7t3JrPIW67Fg-",
-  "artist": null,
-  "year": null,
-  "album": null,
-  "albumArt": null,
+  "artist": "Lynyrd's Innards",
+  "year": "1998",
+  "album": "You're Wreckin' Me",
+  "albumArt": "https://i.discogs.com/4SbYoHf6r3hwbbAR6z6kRBEXrv4oA_w1hiXRNmwI2iM/rs:fit/g:sm/q:90/h:597/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTU2NDIw/NDUtMTY4ODA3NDkz/My03Mzc1LmpwZWc.jpeg",
   "tracks": [
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null
+    "You Wish",
+    "Houston, We Have A Problem",
+    "Invisible",
+    "34 Jasper",
+    "The Agony Of Defeat",
+    "Power Ballad",
+    "Blue Line",
+    "The One Voted Most Likely To Succeed",
+    "Everybody Stinks",
+    "Jumping Someone Else's Train"
   ]
 }
