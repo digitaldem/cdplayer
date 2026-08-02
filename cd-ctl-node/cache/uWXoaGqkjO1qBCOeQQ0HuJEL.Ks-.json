@@ -1,19 +1,19 @@
 {
   "discId": "uWXoaGqkjO1qBCOeQQ0HuJEL.Ks-",
-  "artist": null,
-  "year": null,
-  "album": null,
-  "albumArt": null,
+  "artist": "The Methadones",
+  "year": "2000",
+  "album": "Ill At Ease",
+  "albumArt": "https://i.discogs.com/ROdbasxV297njCwEQ1DGGIpseWjfGNhIg49WmIF_Y4s/rs:fit/g:sm/q:90/h:600/w:584/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTEyNjA5/MTQtMTYyMTIwMTQx/MC01MTE5LmpwZWc.jpeg",
   "tracks": [
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null
+    "Solitude",
+    "Hygene Aisle",
+    "Wake Up",
+    "Past Mistakes",
+    "Bottom Out",
+    "Take A Look",
+    "Slow Down",
+    "Whole Lot Of Nothing",
+    "Who Am I?",
+    "Ill At Ease"
   ]
 }
