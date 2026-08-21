@@ -1,15 +1,15 @@
 {
   "discId": "0S1dBA1gtuUgw1mahLwlTwPsiBU-",
-  "artist": null,
-  "year": null,
-  "album": null,
-  "albumArt": null,
+  "artist": "Screeching Weasel / Born Against",
+  "year": "1993",
+  "album": "El Mozote / Janelle",
+  "albumArt": "https://i.discogs.com/PNoOloWvvQSe48NM7m7zVZ6XEhvxEfC2RZYrxC1wMo4/rs:fit/g:sm/q:90/h:599/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE3NTQw/NDctMTI0MTE5NDAx/NS5qcGVn.jpeg",
   "tracks": [
-    null,
-    null,
-    null,
-    null,
-    null,
-    null
+    "Screeching Weasel - El Mozote",
+    "Screeching Weasel - Fuck This",
+    "Screeching Weasel - Chicago",
+    "Born Against - Janelle",
+    "Born Against - Go Fuck Yourself",
+    "Born Against - Movin' On Up"
   ]
 }
