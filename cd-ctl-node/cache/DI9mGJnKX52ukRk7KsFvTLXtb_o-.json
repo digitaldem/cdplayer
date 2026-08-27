@@ -1,18 +1,18 @@
 {
   "discId": "DI9mGJnKX52ukRk7KsFvTLXtb_o-",
-  "artist": null,
-  "year": null,
-  "album": null,
-  "albumArt": null,
+  "artist": "Black Flag",
+  "year": "1985",
+  "album": "Loose Nut",
+  "albumArt": "https://i.discogs.com/ajgjmUUXJjySXn6_KmHaOOCsMBeunNrqZv4CzG7BxuM/rs:fit/g:sm/q:90/h:600/w:600/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTg3MDUw/OC0xMzM5OTc0NDUy/LTI2NzAuanBlZw.jpeg",
   "tracks": [
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null
+    "Loose Nut",
+    "Bastard In Love",
+    "Annihilate This Week",
+    "Best One Yet",
+    "Modern Man",
+    "This Is Good",
+    "I'm The One",
+    "Sinking",
+    "Now She's Black"
   ]
 }
